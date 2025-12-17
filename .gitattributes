@@ -1,0 +1,49 @@
+# Automatically detect text files
+* text=auto eol=lf encoding=UTF-8
+
+# Common configuration and markup files
+*.xml        text eol=lf encoding=UTF-8
+*.properties text eol=lf encoding=UTF-8
+*.json       text eol=lf encoding=UTF-8
+*.yml        text eol=lf encoding=UTF-8
+*.yaml       text eol=lf encoding=UTF-8
+*.md         text eol=lf encoding=UTF-8
+*.txt        text eol=lf encoding=UTF-8
+
+# Font source files
+*.glyphs text eol=lf encoding=UTF-8
+*.ufo    text eol=lf encoding=UTF-8
+*.sfd    text eol=lf encoding=UTF-8
+
+# Font binaries
+*.ttf    binary
+*.otf    binary
+*.woff   binary
+*.woff2  binary
+*.eot    binary
+
+# Windows batch scripts
+*.bat text eol=crlf
+
+# Binary files
+*.war    binary
+*.ear    binary
+*.zip    binary
+*.tar.gz binary
+*.rar    binary
+
+# Image files
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+
+# Video files
+*.webm binary
+*.mp4  binary
+*.avi  binary
+
+# Audio files
+*.mp3 binary
+*.wav binary
