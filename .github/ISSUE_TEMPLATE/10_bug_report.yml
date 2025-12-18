@@ -25,12 +25,12 @@ body:
   attributes:
     label: "Environment"
     description: |
-      Please provide information about the environment where you encountered the issue, e.g.:
-      - Browser(s) and version(s) (Chrome, Firefox, Edge, Safari, etc.)
-      - Operating system (Windows, macOS, Linux, iOS, Android)
-      - Device name/model (e.g., MacBook Pro 16", iPad Air 13", Samsung Galaxy S23)
-      - Any other details that might help reproduce the issue
-    placeholder: "Example: Chrome 140, Windows 11, Dell XPS 15"
+      Please provide information about the software and environment where you encountered the issue, e.g.:
+      - Design or text editing software (Illustrator, Photoshop, Figma, InDesign, etc.)
+      - Font management software (FontBase, NexusFont, etc.)
+      - Operating system and version (Windows 11 Pro 24H4, macOS 26.2, Ubuntu 24.04, etc.)
+      - Any additional plugins, scripts, or tools used
+    placeholder: "Example: Illustrator 2025, Windows 11 Pro 24H4, FontBase 3.10"
   validations:
     required: true
       
