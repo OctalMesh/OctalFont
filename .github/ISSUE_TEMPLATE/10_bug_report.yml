@@ -1,0 +1,80 @@
+name: "🐞 Bug Report"
+description: "Create a report about something that is not working"
+title: "[Bug]: "
+labels: [ "Bug" ]
+type: "Bug"
+body:
+- type: markdown
+  attributes:
+    value: "Your issue may have already been reported before, so please check for existing issues [here](https://github.com/OctalMesh/OctalFont/issues?q=label%3ABug) before reporting any bugs."
+
+- type: dropdown
+  attributes:
+    label: "Font Used"
+    description: "Please select the font you are reporting the issue on."
+    options:
+      - Light
+      - Regular
+      - Medium
+      - Bold
+      - Other (Specify in Additional Context)
+  validations:
+    required: true
+
+- type: input
+  attributes:
+    label: "Environment"
+    description: |
+      Please provide information about the environment where you encountered the issue, e.g.:
+      - Browser(s) and version(s) (Chrome, Firefox, Edge, Safari, etc.)
+      - Operating system (Windows, macOS, Linux, iOS, Android)
+      - Device name/model (e.g., MacBook Pro 16", iPad Air 13", Samsung Galaxy S23)
+      - Any other details that might help reproduce the issue
+    placeholder: "Example: Chrome 140, Windows 11, Dell XPS 15"
+  validations:
+    required: true
+      
+- type: textarea
+  attributes:
+    label: "Bug description"
+    description: "A clear and concise description of what the bug is."
+  validations:
+    required: true
+    
+- type: textarea
+  attributes:
+    label: "Expected Behavior"
+    description: "A clear and concise description of what you expected to happen."
+  validations:
+    required: false
+    
+- type: textarea
+  attributes:
+    label: "Steps To Reproduce"
+    description: "Specify clear and concise step-by-step actions to reproduce the problem."
+  validations:
+    required: false
+
+- type: textarea
+  attributes:
+    label: "Additional context"
+    description: |
+      Links? References? Anything that will give us more context about the issue you are encountering!
+
+      Tip: You can attach images or log files by clicking this area to highlight it and then dragging files in.
+  validations:
+    required: false
+
+- type: checkboxes
+  attributes:
+    label: "Acknowledgements"
+    description: "Your issue will be closed if you haven't done these steps."
+    options: 
+      - label: "I have searched the existing issues and this is a new issue and not a duplicate of any another open issue."
+        required: true
+      - label: "I have written a short but informative title."
+        required: true
+      - label: "I have filled out all of the requested information in this issue properly."
+        required: true
+      - label: "I confirm that I am using the latest version of the selected font."
+        required: true
