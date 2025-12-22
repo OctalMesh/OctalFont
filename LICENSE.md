@@ -1,9 +1,9 @@
-Copyright (c) 2025, OctalMesh (https://octalmesh.com), with Reserved Font Name 
+Copyright (c) 2025, OctalMesh (<https://octalmesh.com>), with Reserved Font Name 
 OctalFont.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.  
 This license is copied below, and is also available with a FAQ at:  
-https://openfontlicense.org
+<https://openfontlicense.org>
 
 ---------------------------------------------------------
 #### SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
