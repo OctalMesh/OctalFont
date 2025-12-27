@@ -10,10 +10,16 @@
 *.md         text eol=lf encoding=UTF-8
 *.txt        text eol=lf encoding=UTF-8
 
+# Python
+*.py  text eol=lf encoding=UTF-8
+*.pyi text eol=lf encoding=UTF-8
+
 # Font source files
 *.glyphs text eol=lf encoding=UTF-8
+*.glif   text eol=lf encoding=UTF-8
 *.ufo    text eol=lf encoding=UTF-8
 *.sfd    text eol=lf encoding=UTF-8
+*.plist  text eol=lf encoding=UTF-8
 
 # Font binaries
 *.ttf    binary
@@ -25,7 +31,7 @@
 # Windows batch scripts
 *.bat text eol=crlf
 
-# Binary files
+# Packaged files
 *.war    binary
 *.ear    binary
 *.zip    binary
@@ -38,6 +44,10 @@
 *.jpeg binary
 *.gif  binary
 *.webp binary
+
+# Design files
+*.ai   binary
+*.psd  binary
 
 # Video files
 *.webm binary
