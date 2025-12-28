@@ -231,4 +231,9 @@ if [[ -z "${COMMAND_MAP_FUNC[$COMMAND]}" ]]; then
     show_help
 fi
 
+# Prevent accidental commits of requirements files
+if command -v git >/dev/null 2>&1; then
+  git update-index --skip-worktree requirements.txt requirements-test.txt 2>/dev/null || true
+fi
+
 "${COMMAND_MAP_FUNC[$COMMAND]}"
