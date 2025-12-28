@@ -22,7 +22,7 @@ COMMAND="$1"
 shift || true
 
 # Paths
-ROOT="$(cd "$(dirname "$SCRIPT_NAME")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")" && pwd)"
 VENV="$ROOT/venv"
 BUILD="$ROOT/build"
 PYTHON_EXE=""
@@ -144,7 +144,8 @@ function install_dependencies {
     [ -f "$ROOT/requirements-test.txt" ] && REQS+=("-r" "$ROOT/requirements-test.txt")
 
     if [ ${#REQS[@]} -gt 0 ]; then
-        "$VENV_PYTHON_CMD" -m pip install -Ur "${REQS[1]}" "${REQS[@]}" 2>/dev/null || "$VENV_PYTHON_CMD" -m pip install "${REQS[@]}"
+        "$VENV_PYTHON_CMD" -m pip install -Ur "${REQS[1]}" "${REQS[@]}" 2>/dev/null \
+            || "$VENV_PYTHON_CMD" -m pip install "${REQS[@]}"
     fi
 }
 
