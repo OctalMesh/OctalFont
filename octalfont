@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+set -e
+
+# ========= #
+# Variables #
+# ========= #
+
+# Font family and subfonts
+FAMILY="OctalFont"
+SUBFONTS=("Cuprum" "Titan" "Mercury")
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Command parsing
+SCRIPT_NAME="$(basename "$0")"
+COMMAND="$1"
+shift || true
+
+# Paths
+ROOT="$(cd "$(dirname "$SCRIPT_NAME")/.." && pwd)"
+VENV="$ROOT/venv"
+BUILD="$ROOT/build"
+PYTHON_EXE=""
+
+# Markers
+VENV_SUCCESS_MARKER="$VENV/setup_complete.marker"
+
+# Command descriptions
+declare -A COMMAND_MAP_DESC=(
+    [build]="🔨 Build all ${FAMILY} subfonts and output to build"
+    [test]="🧪 Run tests in tests"
+    [update]="⬆️ Update Python dependencies from requirements"
+    [clean]="🧹 Remove build artifacts and virtual environment"
+    [help]="❓ Show help message"
+)
+
+# Command functions
+declare -A COMMAND_MAP_FUNC=(
+    [build]=build_fonts
+    [test]=run_tests
+    [update]=update_dependencies
+    [clean]=clean_all
+    [help]=show_help
+)
+
+# ============ #
+# OS Detection #
+# ============ #
+
+CYGWIN=false
+MSYS=false
+DARWIN=false
+WINDOWS=false
+
+case "$(uname -s)" in
+  CYGWIN*        ) CYGWIN=true ;;
+  MSYS* | MINGW* ) MSYS=true ;;
+  Darwin*        ) DARWIN=true ;;
+  *NT*           ) WINDOWS=true ;;
+esac
+
+# Convert paths for Windows / macOS
+if $CYGWIN || $MSYS; then
+    ROOT=$(cygpath -m "$ROOT")
+    VENV=$(cygpath -m "$VENV")
+    BUILD=$(cygpath -m "$BUILD")
+elif $DARWIN; then
+    ROOT=$(realpath "$ROOT")
+    VENV=$(realpath "$VENV")
+    BUILD=$(realpath "$BUILD")
+fi
+
+# Venv binaries
+if $WINDOWS || $CYGWIN || $MSYS; then
+    VENV_PYTHON_CMD="$VENV/Scripts/python.exe"
+    PIP_CMD="$VENV/Scripts/pip.exe"
+    PIP_COMPILE_CMD="$VENV/Scripts/pip-compile.exe"
+    PIP_SYNC_CMD="$VENV/Scripts/pip-sync.exe"
+    FONTMAKE_CMD="$VENV/Scripts/fontmake.exe"
+    PYTEST_CMD="$VENV/Scripts/pytest.exe"
+else
+    VENV_PYTHON_CMD="$VENV/bin/python"
+    PIP_CMD="$VENV/bin/pip"
+    PIP_COMPILE_CMD="$VENV/bin/pip-compile"
+    PIP_SYNC_CMD="$VENV/bin/pip-sync"
+    FONTMAKE_CMD="$VENV/bin/fontmake"
+    PYTEST_CMD="$VENV/bin/pytest"
+fi
+
+# ========= #
+# Functions #
+# ========= #
+
+log()     { echo -e "${BLUE}>> $1${NC}"; }
+success() { echo -e "${GREEN}SUCCESS: $1${NC}"; }
+warn()    { echo -e "${YELLOW}WARNING: $1${NC}"; }
+error()   { echo -e "${RED}ERROR: $1${NC}"; }
+
+function ensure_python {
+    [ -n "$PYTHON_EXE" ] && return 0
+
+    for cmd in python3 python py; do
+        if command -v "$cmd" &> /dev/null && "$cmd" -c "import sys; exit(0 if sys.version_info.major == 3 else 1)" &> /dev/null; then
+            PYTHON_EXE="$cmd"
+            return 0
+        fi
+    done
+
+    error "Python 3 not found."
+    return 1
+}
+
+function init_venv {
+    if [ ! -f "$VENV_SUCCESS_MARKER" ] || [ ! -f "$VENV_PYTHON_CMD" ]; then
+        log "Virtual environment is missing or corrupted. Initializing..."
+
+        [ -d "$VENV" ] && rm -rf "$VENV"
+
+        ensure_python
+
+        log "Creating venv..."
+        "$PYTHON_EXE" -m venv "$VENV"
+
+        log "Upgrading pip in the venv..."
+        "$VENV_PYTHON_CMD" -m pip install --upgrade pip
+
+        install_dependencies
+
+        success "Virtual environment is ready."
+        touch "$VENV_SUCCESS_MARKER"
+    fi
+}
+
+function install_dependencies {
+    log "Installing dependencies from requirements files..."
+
+    local REQS=()
+    [ -f "$ROOT/requirements.txt" ] && REQS+=("-r" "$ROOT/requirements.txt")
+    [ -f "$ROOT/requirements-test.txt" ] && REQS+=("-r" "$ROOT/requirements-test.txt")
+
+    if [ ${#REQS[@]} -gt 0 ]; then
+        "$VENV_PYTHON_CMD" -m pip install -Ur "${REQS[1]}" "${REQS[@]}" 2>/dev/null || "$VENV_PYTHON_CMD" -m pip install "${REQS[@]}"
+    fi
+}
+
+function build_fonts {
+    init_venv
+
+    log "Building fonts..."
+    rm -rf "$BUILD"
+    mkdir -p "$BUILD"
+
+    # TODO: Add build logic here using fontmake
+}
+
+function run_tests {
+    init_venv
+
+    log "Running tests..."
+    "$PYTEST_CMD" "$ROOT/tests"
+}
+
+function update_dependencies {
+    init_venv
+
+    log "Updating Python dependencies..."
+    "$PIP_CMD" install --upgrade pip pip-tools
+
+    if [ -f "$ROOT/requirements.in" ]; then
+        log "Compiling main requirements..."
+        "$PIP_COMPILE_CMD" --upgrade --resolver=backtracking "$ROOT/requirements.in"
+
+        if [ -f "$ROOT/requirements-test.in" ]; then
+            log "Compiling test requirements..."
+            "$PIP_COMPILE_CMD" --upgrade --resolver=backtracking \
+                --constraint "$ROOT/requirements.txt" \
+                "$ROOT/requirements-test.in"
+        fi
+
+        log "Syncing environment..."
+
+        if [ -f "$ROOT/requirements-test.txt" ]; then
+            "$PIP_SYNC_CMD" "$ROOT/requirements.txt" "$ROOT/requirements-test.txt"
+        else
+            "$PIP_SYNC_CMD" "$ROOT/requirements.txt"
+        fi
+    else
+        install_dependencies
+    fi
+
+    success "Dependencies updated."
+}
+
+function clean_all {
+    log "Cleaning build artifacts and virtual environment..."
+
+    rm -rf "$BUILD" "$VENV" "$ROOT/out"
+    find "$ROOT" -name "*.pyc" -delete
+
+    success "Cleaned all build artifacts and virtual environment."
+}
+
+function show_help {
+    echo -e "${GREEN}Usage:${NC} ${SCRIPT_NAME} {build|test|update|clean|help}"
+    echo
+    echo -e "${YELLOW}Commands:${NC}"
+    for cmd in "${!COMMAND_MAP_DESC[@]}"; do
+        printf "  %-8s %s\n" "$cmd" "${COMMAND_MAP_DESC[$cmd]}"
+    done
+    echo
+    echo -e "${BLUE}Tips:${NC}"
+    echo -e "  - Python will be used automatically when needed"
+    echo -e "  - Run '${SCRIPT_NAME} update' after pulling new changes to update dependencies"
+    exit 1
+}
+
+# ========== #
+# Main logic #
+# ========== #
+
+[[ -z "$COMMAND" ]] && show_help
+
+if [[ -z "${COMMAND_MAP_FUNC[$COMMAND]}" ]]; then
+    error "Unknown command '$COMMAND'"
+    show_help
+fi
+
+"${COMMAND_MAP_FUNC[$COMMAND]}"
