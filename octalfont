@@ -25,7 +25,12 @@ shift || true
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 VENV="$ROOT/venv"
 BUILD="$ROOT/build"
-PYTHON_EXE=""
+REQS_IN="$ROOT/requirements.in"
+REQS_TXT="$ROOT/requirements.txt"
+REQS_TEST_IN="$ROOT/requirements-test.in"
+REQS_TEST_TXT="$ROOT/requirements-test.txt"
+
+PATH_VARS=(ROOT VENV BUILD REQS_IN REQS_TXT REQS_TEST_IN REQS_TEST_TXT)
 
 # Markers
 VENV_SUCCESS_MARKER="$VENV/setup_complete.marker"
@@ -52,45 +57,39 @@ declare -A COMMAND_MAP_FUNC=(
 # OS Detection #
 # ============ #
 
-CYGWIN=false
-MSYS=false
-DARWIN=false
-WINDOWS=false
+IS_WINDOWS=false
+IS_DARWIN=false
 
+# Detect OS
 case "$(uname -s)" in
-  CYGWIN*        ) CYGWIN=true ;;
-  MSYS* | MINGW* ) MSYS=true ;;
-  Darwin*        ) DARWIN=true ;;
-  *NT*           ) WINDOWS=true ;;
+    CYGWIN*|MSYS*|MINGW*) IS_WINDOWS=true ;;
+    Darwin*)              IS_DARWIN=true ;;
 esac
 
-# Convert paths for Windows / macOS
-if $CYGWIN || $MSYS; then
-    ROOT=$(cygpath -m "$ROOT")
-    VENV=$(cygpath -m "$VENV")
-    BUILD=$(cygpath -m "$BUILD")
-elif $DARWIN; then
-    ROOT=$(realpath "$ROOT")
-    VENV=$(realpath "$VENV")
-    BUILD=$(realpath "$BUILD")
-fi
+# Normalize paths for Windows and macOS
+for var_name in "${PATH_VARS[@]}"; do
+    if $IS_WINDOWS; then
+        eval "$var_name=\"\$(cygpath -m \"\${$var_name}\")\""
+    elif $IS_DARWIN; then
+        eval "$var_name=\"\$(realpath \"\${$var_name}\")\""
+    fi
+done
 
 # Venv binaries
-if $WINDOWS || $CYGWIN || $MSYS; then
-    VENV_PYTHON_CMD="$VENV/Scripts/python.exe"
-    PIP_CMD="$VENV/Scripts/pip.exe"
-    PIP_COMPILE_CMD="$VENV/Scripts/pip-compile.exe"
-    PIP_SYNC_CMD="$VENV/Scripts/pip-sync.exe"
-    FONTMAKE_CMD="$VENV/Scripts/fontmake.exe"
-    PYTEST_CMD="$VENV/Scripts/pytest.exe"
+if $IS_WINDOWS; then
+    BIN_DIR="Scripts"
+    EXE=".exe"
 else
-    VENV_PYTHON_CMD="$VENV/bin/python"
-    PIP_CMD="$VENV/bin/pip"
-    PIP_COMPILE_CMD="$VENV/bin/pip-compile"
-    PIP_SYNC_CMD="$VENV/bin/pip-sync"
-    FONTMAKE_CMD="$VENV/bin/fontmake"
-    PYTEST_CMD="$VENV/bin/pytest"
+    BIN_DIR="bin"
+    EXE=""
 fi
+
+VENV_PYTHON_CMD="$VENV/$BIN_DIR/python$EXE"
+PIP_CMD="$VENV/$BIN_DIR/pip$EXE"
+PIP_COMPILE_CMD="$VENV/$BIN_DIR/pip-compile$EXE"
+PIP_SYNC_CMD="$VENV/$BIN_DIR/pip-sync$EXE"
+FONTMAKE_CMD="$VENV/$BIN_DIR/fontmake$EXE"
+PYTEST_CMD="$VENV/$BIN_DIR/pytest$EXE"
 
 # ========= #
 # Functions #
@@ -137,15 +136,14 @@ function init_venv {
 }
 
 function install_dependencies {
-    log "Installing dependencies from requirements files..."
+    log "Installing dependencies..."
 
     local REQS=()
-    [ -f "$ROOT/requirements.txt" ] && REQS+=("-r" "$ROOT/requirements.txt")
-    [ -f "$ROOT/requirements-test.txt" ] && REQS+=("-r" "$ROOT/requirements-test.txt")
+    [ -f "$REQS_TXT" ] && REQS+=("-r" "$REQS_TXT")
+    [ -f "$REQS_TEST_TXT" ] && REQS+=("-r" "$REQS_TEST_TXT")
 
     if [ ${#REQS[@]} -gt 0 ]; then
-        "$VENV_PYTHON_CMD" -m pip install -Ur "${REQS[1]}" "${REQS[@]}" 2>/dev/null \
-            || "$VENV_PYTHON_CMD" -m pip install "${REQS[@]}"
+        "$VENV_PYTHON_CMD" -m pip install "${REQS[@]}"
     fi
 }
 
@@ -168,32 +166,29 @@ function run_tests {
 
 function update_dependencies {
     init_venv
-
     log "Updating Python dependencies..."
     "$PIP_CMD" install --upgrade pip pip-tools
 
-    if [ -f "$ROOT/requirements.in" ]; then
+    if [ -f "$REQS_IN" ]; then
         log "Compiling main requirements..."
-        "$PIP_COMPILE_CMD" --upgrade --resolver=backtracking "$ROOT/requirements.in"
+        "$PIP_COMPILE_CMD" --upgrade --resolver=backtracking "$REQS_IN"
 
-        if [ -f "$ROOT/requirements-test.in" ]; then
+        if [ -f "$REQS_TEST_IN" ]; then
             log "Compiling test requirements..."
             "$PIP_COMPILE_CMD" --upgrade --resolver=backtracking \
-                --constraint "$ROOT/requirements.txt" \
-                "$ROOT/requirements-test.in"
+                --constraint "$REQS_TXT" \
+                "$REQS_TEST_IN"
         fi
 
         log "Syncing environment..."
-
-        if [ -f "$ROOT/requirements-test.txt" ]; then
-            "$PIP_SYNC_CMD" "$ROOT/requirements.txt" "$ROOT/requirements-test.txt"
+        if [ -f "$REQS_TEST_TXT" ]; then
+            "$PIP_SYNC_CMD" "$REQS_TXT" "$REQS_TEST_TXT"
         else
-            "$PIP_SYNC_CMD" "$ROOT/requirements.txt"
+            "$PIP_SYNC_CMD" "$REQS_TXT"
         fi
     else
         install_dependencies
     fi
-
     success "Dependencies updated."
 }
 
@@ -224,16 +219,20 @@ function show_help {
 # Main logic #
 # ========== #
 
-[[ -z "$COMMAND" ]] && show_help
-
-if [[ -z "${COMMAND_MAP_FUNC[$COMMAND]}" ]]; then
-    error "Unknown command '$COMMAND'"
+# Validate command
+if [[ -z "$COMMAND" || -z "${COMMAND_MAP_FUNC[$COMMAND]}" ]]; then
+    [[ -n "$COMMAND" ]] && error "Unknown command '$COMMAND'"
     show_help
 fi
 
-# Prevent accidental commits of requirements files
+# Forcedly ignore changes to requirements files in git
 if command -v git >/dev/null 2>&1; then
-  git update-index --skip-worktree requirements.txt requirements-test.txt 2>/dev/null || true
+    for req_file in "$REQS_TXT" "$REQS_TEST_TXT"; do
+        if [ -f "$req_file" ]; then
+            git update-index --skip-worktree "$req_file" 2>/dev/null || true
+        fi
+    done
 fi
 
+# Execute command
 "${COMMAND_MAP_FUNC[$COMMAND]}"
