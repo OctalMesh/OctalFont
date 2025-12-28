@@ -71,6 +71,10 @@ __pycache__/
 *.pyd
 *.pyc
 
+# Requirements txt files
+requirements.txt
+requirements-test.txt
+
 # Virtual Environments
 venv/
 env/
