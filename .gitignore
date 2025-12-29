@@ -6,6 +6,7 @@ dist/
 out/
 *.egg-info/
 .eggs/
+logs/
 
 
 # Environment / Misc

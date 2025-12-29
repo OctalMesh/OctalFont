@@ -1,43 +1,77 @@
 #!/usr/bin/env bash
+
+# ============================================================================ #
+# OctalFont Build and Management Script                                        #
+# Version: 0.1.0                                                               #
+#                                                                              #
+# DESCRIPTION:                                                                 #
+#   A unified interface for managing the OctalFont development environment.    #
+#   Handles virtual environment creation, dependency resolution (pip-tools),   #
+#   font compilation (fontmake), and automated testing.                        #
+#                                                                              #
+# OS SUPPORT:                                                                  #
+#   - Linux / macOS (Native)                                                   #
+#   - Windows (via Git Bash / MSYS2 / Cygwin)                                  #
+#                                                                              #
+# USAGE:                                                                       #
+#   ./octalfont [command] [-l|--log]                                           #
+#                                                                              #
+# COMMANDS:                                                                    #
+#   build     - Compile all OctalFont subfonts and output to build             #
+#   test      - Run the test suite located in 'tests'                          #
+#   update    - Update Python dependencies from requirements                   #
+#   clean     - Remove build artifacts and virtual environment                 #
+#   help      - Show help message                                              #
+#                                                                              #
+# OPTIONS:                                                                     #
+#   -l, --log  - Enable session logging to 'logs/' directory                   #
+# ============================================================================ #
+
 set -e
+set -u
+set -o pipefail
 
-# ========= #
-# Variables #
-# ========= #
+# ============================================================================ #
+#                                   Variables                                  #
+# ============================================================================ #
 
-# Font family and subfonts
-FAMILY="OctalFont"
-SUBFONTS=("Cuprum" "Titan" "Mercury")
+# Configuration
+FONT_FAMILY="OctalFont"
+FONT_SUBFONTS=("Cuprum" "Titan" "Mercury")
+FONT_VERSION="0.1.0"
 
-# Command parsing
+export LOG_LEVEL=INFO
+export LOG_DIR="logs"
+
 SCRIPT_NAME="$(basename "$0")"
-COMMAND="$1"
-shift || true
+SCRIPT_VERSION="0.1.0"
 
-# Paths
+# Project Structure
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-VENV="$ROOT/venv"
-BUILD="$ROOT/build"
-REQS_IN="$ROOT/requirements.in"
-REQS_TXT="$ROOT/requirements.txt"
-REQS_TEST_IN="$ROOT/requirements-test.in"
-REQS_TEST_TXT="$ROOT/requirements-test.txt"
+PYTHON_EXE=""
+VENV="${ROOT}/venv"
+BUILD="${ROOT}/build"
+SHELL_TOOLS="${ROOT}/tools/shell"
+REQS_IN="${ROOT}/requirements.in"
+REQS_TXT="${ROOT}/requirements.txt"
+REQS_TEST_IN="${ROOT}/requirements-test.in"
+REQS_TEST_TXT="${ROOT}/requirements-test.txt"
+VENV_SUCCESS_MARKER="${VENV}/setup_complete.marker"
 
-PATH_VARS=(ROOT VENV BUILD REQS_IN REQS_TXT REQS_TEST_IN REQS_TEST_TXT)
+PATH_VARS=(ROOT VENV BUILD SHELL_TOOLS REQS_IN REQS_TXT REQS_TEST_IN REQS_TEST_TXT VENV_SUCCESS_MARKER)
+ENABLE_SESSION_LOG=false
+COMMAND=""
 
-# Markers
-VENV_SUCCESS_MARKER="$VENV/setup_complete.marker"
-
-# Command descriptions
+# Command descriptions mapping
 declare -A COMMAND_MAP_DESC=(
-    [build]="🔨 Build all ${FAMILY} subfonts and output to build"
-    [test]="🧪 Run tests in tests"
+    [build]="🔨 Build all ${FONT_FAMILY} subfonts and output to build"
+    [test]="🧪 Run the test suite located in 'tests'"
     [update]="⬆️ Update Python dependencies from requirements"
     [clean]="🧹 Remove build artifacts and virtual environment"
     [help]="❓ Show help message"
 )
 
-# Command functions
+# Command to function mapping
 declare -A COMMAND_MAP_FUNC=(
     [build]=build_fonts
     [test]=run_tests
@@ -46,30 +80,31 @@ declare -A COMMAND_MAP_FUNC=(
     [help]=show_help
 )
 
-# ============ #
-# OS Detection #
-# ============ #
+# ============================================================================ #
+#                                 OS Detection                                 #
+# ============================================================================ #
+# Detect the operating system to handle path normalization and binary naming.  #
+# ============================================================================ #
 
 IS_WINDOWS=false
 IS_DARWIN=false
 
-# Detect OS
 case "$(uname -s)" in
     CYGWIN*|MSYS*|MINGW*) IS_WINDOWS=true ;;
     Darwin*)              IS_DARWIN=true ;;
 esac
 
-# Normalize paths for Windows and macOS
+# Normalize paths
 for var_name in "${PATH_VARS[@]}"; do
-    if $IS_WINDOWS; then
-        eval "$var_name=\"\$(cygpath -m \"\${$var_name}\")\""
-    elif $IS_DARWIN; then
-        eval "$var_name=\"\$(realpath \"\${$var_name}\")\""
+    if ${IS_WINDOWS}; then
+        eval "${var_name}=\"\$(cygpath -m \"\${${var_name}}\")\""
+    elif ${IS_DARWIN}; then
+        eval "${var_name}=\"\$(realpath \"\${${var_name}}\")\""
     fi
 done
 
-# Venv binaries
-if $IS_WINDOWS; then
+# Set binary directory structure based on OS
+if ${IS_WINDOWS}; then
     BIN_DIR="Scripts"
     EXE=".exe"
 else
@@ -77,184 +112,198 @@ else
     EXE=""
 fi
 
-VENV_PYTHON_CMD="$VENV/$BIN_DIR/python$EXE"
-PIP_CMD="$VENV/$BIN_DIR/pip$EXE"
-PIP_COMPILE_CMD="$VENV/$BIN_DIR/pip-compile$EXE"
-PIP_SYNC_CMD="$VENV/$BIN_DIR/pip-sync$EXE"
-FONTMAKE_CMD="$VENV/$BIN_DIR/fontmake$EXE"
-PYTEST_CMD="$VENV/$BIN_DIR/pytest$EXE"
+# Tool paths within the virtual environment
+VENV_PYTHON_CMD="${VENV}/${BIN_DIR}/python${EXE}"
+PIP_CMD="${VENV}/${BIN_DIR}/pip${EXE}"
+PIP_COMPILE_CMD="${VENV}/${BIN_DIR}/pip-compile${EXE}"
+PIP_SYNC_CMD="${VENV}/${BIN_DIR}/pip-sync${EXE}"
+FONTMAKE_CMD="${VENV}/${BIN_DIR}/fontmake${EXE}"
+PYTEST_CMD="${VENV}/${BIN_DIR}/pytest${EXE}"
 
-# ========= #
-# Logging   #
-# ========= #
+# ============================================================================ #
+#                                Core Functions                                #
+# ============================================================================ #
+# Defines the main operations for managing the OctalFont project.              #
+# ============================================================================ #
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-# Disable colors if output is not a terminal
-if [[ ! -t 1 ]]; then
-    RED='' GREEN='' YELLOW='' BLUE='' NC=''
-fi
-
-_print_msg() {
-    local color prefix timestamp msg
-
-    color="$1"
-    prefix="$2"
-    shift 2
-
-    timestamp=$(date +"%H:%M:%S")
-    msg="$*"
-
-    printf "${color}[%s] %s: %b${NC}\n" "$timestamp" "$prefix" "$msg"
-}
-
-log()     { _print_msg "$BLUE"   ""        "$@"; }
-success() { _print_msg "$GREEN"  "SUCCESS" "$@"; }
-warn()    { _print_msg "$YELLOW" "WARNING" "$@"; }
-error()   { _print_msg "$RED"    "ERROR"   "$@"; } >&2
-
-# ========= #
-# Functions #
-# ========= #
-
+# Locates a valid Python 3 interpreter on the system PATH.
 function ensure_python {
-    [ -n "$PYTHON_EXE" ] && return 0
+    [ -n "${PYTHON_EXE}" ] && return 0
 
     for cmd in python3 python py; do
-        if command -v "$cmd" &> /dev/null && "$cmd" -c "import sys; exit(0 if sys.version_info.major == 3 else 1)" &> /dev/null; then
-            PYTHON_EXE="$cmd"
+        if command -v "${cmd}" &> /dev/null && "${cmd}" -c "import sys; exit(0 if sys.version_info.major == 3 else 1)" &> /dev/null; then
+            PYTHON_EXE="${cmd}"
             return 0
         fi
     done
 
-    error "Python 3 not found."
+    error "Python 3 not found. Please install Python major version 3 and ensure it's on your PATH." \
+          "Visit https://www.python.org/downloads/ for installation instructions."
     return 1
 }
 
+# Bootstraps the Python virtual environment if it doesn't exist.
 function init_venv {
-    if [ ! -f "$VENV_SUCCESS_MARKER" ] || [ ! -f "$VENV_PYTHON_CMD" ]; then
-        log "Virtual environment is missing or corrupted. Initializing..."
+    if [ ! -f "${VENV_SUCCESS_MARKER}" ] || [ ! -f "${VENV_PYTHON_CMD}" ]; then
+        info "Virtual environment is missing or corrupted. Initializing..."
 
-        [ -d "$VENV" ] && rm -rf "$VENV"
-
+        [ -d "${VENV}" ] && rm -rf "${VENV}"
         ensure_python
 
-        log "Creating venv..."
-        "$PYTHON_EXE" -m venv "$VENV"
+        info "Creating venv at ${VENV} using ${PYTHON_EXE}..."
+        "${PYTHON_EXE}" -m venv "${VENV}"
 
-        log "Upgrading pip in the venv..."
-        "$VENV_PYTHON_CMD" -m pip install --upgrade pip
+        info "Upgrading bootstrap tools (pip)..."
+        "${VENV_PYTHON_CMD}" -m pip install --upgrade pip
 
         install_dependencies
-
+        touch "${VENV_SUCCESS_MARKER}"
         success "Virtual environment is ready."
-        touch "$VENV_SUCCESS_MARKER"
     fi
 }
 
+# Installs dependencies from requirements.txt files into the venv.
 function install_dependencies {
-    log "Installing dependencies..."
+    info "Installing dependencies..."
 
     local REQS=()
-    [ -f "$REQS_TXT" ] && REQS+=("-r" "$REQS_TXT")
-    [ -f "$REQS_TEST_TXT" ] && REQS+=("-r" "$REQS_TEST_TXT")
+    [ -f "${REQS_TXT}" ] && REQS+=("-r" "${REQS_TXT}")
+    [ -f "${REQS_TEST_TXT}" ] && REQS+=("-r" "${REQS_TEST_TXT}")
 
     if [ ${#REQS[@]} -gt 0 ]; then
-        "$VENV_PYTHON_CMD" -m pip install "${REQS[@]}"
+        "${VENV_PYTHON_CMD}" -m pip install "${REQS[@]}"
+    else
+        warn "No requirements.txt found. Skipping installation."
     fi
 }
 
+# Compiles the font sources into final binaries.
 function build_fonts {
     init_venv
 
-    log "Building fonts..."
-    rm -rf "$BUILD"
-    mkdir -p "$BUILD"
+    info "Starting build process for ${FONT_FAMILY}..."
+    rm -rf "${BUILD}"
+    mkdir -p "${BUILD}"
 
     # TODO: Add build logic here using fontmake
 }
 
+# Executes the test suite using pytest.
 function run_tests {
     init_venv
 
-    log "Running tests..."
-    "$PYTEST_CMD" "$ROOT/tests"
+    if [ ! -f "${PYTEST_CMD}" ]; then
+        error "Pytest not found. Run '${SCRIPT_NAME} update' first."
+        exit 1
+    fi
+
+    info "Running tests..."
+    "${PYTEST_CMD}" "${ROOT}/tests"
 }
 
+# Updates dependencies from requirements.in using pip-tools.
 function update_dependencies {
     init_venv
-    log "Updating Python dependencies..."
-    "$PIP_CMD" install --upgrade pip pip-tools
+    info "Updating Python dependencies (pip-tools)..."
+    "${PIP_CMD}" install --upgrade pip pip-tools
 
-    if [ -f "$REQS_IN" ]; then
-        log "Compiling main requirements..."
-        "$PIP_COMPILE_CMD" --upgrade --resolver=backtracking "$REQS_IN"
+    if [ -f "${REQS_IN}" ]; then
+        info "Compiling requirements.in -> requirements.txt..."
+        "${PIP_COMPILE_CMD}" --upgrade --resolver=backtracking "${REQS_IN}"
 
-        if [ -f "$REQS_TEST_IN" ]; then
-            log "Compiling test requirements..."
-            "$PIP_COMPILE_CMD" --upgrade --resolver=backtracking \
-                --constraint "$REQS_TXT" \
-                "$REQS_TEST_IN"
+        if [ -f "${REQS_TEST_IN}" ]; then
+            info "Compiling requirements-test.in with constraints..."
+            "${PIP_COMPILE_CMD}" --upgrade --resolver=backtracking \
+                --constraint "${REQS_TXT}" \
+                "${REQS_TEST_IN}"
         fi
 
-        log "Syncing environment..."
-        if [ -f "$REQS_TEST_TXT" ]; then
-            "$PIP_SYNC_CMD" "$REQS_TXT" "$REQS_TEST_TXT"
+        info "Syncing environment with new lockfiles..."
+        if [ -f "${REQS_TEST_TXT}" ]; then
+            "${PIP_SYNC_CMD}" "${REQS_TXT}" "${REQS_TEST_TXT}"
         else
-            "$PIP_SYNC_CMD" "$REQS_TXT"
+            "${PIP_SYNC_CMD}" "${REQS_TXT}"
         fi
     else
+        warn "No requirements.in found. Falling back to simple install."
         install_dependencies
     fi
-    success "Dependencies updated."
+
+    success "Dependencies successfully synchronized."
 }
 
+# Wipes all temporary directories and cache files.
 function clean_all {
-    log "Cleaning build artifacts and virtual environment..."
+    info "Cleaning build artifacts and virtual environment..."
 
-    rm -rf "$BUILD" "$VENV" "$ROOT/out"
-    find "$ROOT" -name "*.pyc" -delete
+    rm -rf "${BUILD}" "${VENV}" "${ROOT}/out"
+    find "${ROOT}" -name "*.pyc" -delete
+    find "${ROOT}" -name "__pycache__" -type d -exec rm -rf {} +
 
-    success "Cleaned all build artifacts and virtual environment."
+    success "Environment cleaned."
 }
 
+# Displays the help menu.
 function show_help {
-    echo -e "${GREEN}Usage:${NC} ${SCRIPT_NAME} {build|test|update|clean|help}"
+    echo -e "${BLUE}${FONT_FAMILY} Management Script${RESET}"
+    echo -e "${BLUE}Manages:${RESET} ${FONT_SUBFONTS[*]/#/${FONT_FAMILY}-}"
     echo
-    echo -e "${YELLOW}Commands:${NC}"
-    for cmd in "${!COMMAND_MAP_DESC[@]}"; do
-        printf "  %-8s %s\n" "$cmd" "${COMMAND_MAP_DESC[$cmd]}"
+    echo -e "${GREEN}Usage:${RESET} ${SCRIPT_NAME} [command] [-l|--log]"
+    echo
+    echo -e "${YELLOW}Available Commands:${RESET}"
+    for cmd in $(echo "${!COMMAND_MAP_DESC[@]}" | tr ' ' '\n' | sort); do
+        printf "  %-10s %s\n" "${cmd}" "${COMMAND_MAP_DESC[${cmd}]}"
     done
     echo
-    echo -e "${BLUE}Tips:${NC}"
-    echo -e "  - Python will be used automatically when needed"
-    echo -e "  - Run '${SCRIPT_NAME} update' after pulling new changes to update dependencies"
+    echo -e "${YELLOW}Options:${RESET}"
+    echo -e "  -l, --log    Enable session logging to 'logs/' directory"
+    echo
+    echo -e "${BLUE}Documentation:${RESET}"
+    echo -e "  - This script manages a Python venv for font engineering."
+    echo -e "  - Use 'update' whenever you change requirements.in."
+    echo -e "  - Build outputs are generated in the 'build/' directory."
     exit 1
 }
 
-# ========== #
-# Main logic #
-# ========== #
+# ============================================================================ #
+#                                Main Execution                                #
+# ============================================================================ #
 
-# Validate command
-if [[ -z "$COMMAND" || -z "${COMMAND_MAP_FUNC[$COMMAND]}" ]]; then
-    [[ -n "$COMMAND" ]] && error "Unknown command '$COMMAND'"
+# Load Shell Tools
+source "${SHELL_TOOLS}/logging.sh"
+
+# Parse optional flags
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        -l|--log) ENABLE_SESSION_LOG=true;               shift ;;
+        -*)       error "Unknown option: $1";            show_help ;;
+        *)        [[ -z "${COMMAND}" ]] && COMMAND="$1"; shift ;;
+    esac
+done
+
+# Start session logging if enabled
+if ${ENABLE_SESSION_LOG}; then
+    start_session_logging
+fi
+
+# Command validation
+SELECTED_CMD="${COMMAND:-}"
+
+if [[ -z "${SELECTED_CMD}" || -z "${COMMAND_MAP_FUNC[${SELECTED_CMD}]:-}" ]]; then
+    [[ -n "${SELECTED_CMD}" ]] && error "Unknown command '${SELECTED_CMD}'"
     show_help
 fi
 
-# Forcedly ignore changes to requirements files in git
-if command -v git >/dev/null 2>&1; then
-    for req_file in "$REQS_TXT" "$REQS_TEST_TXT"; do
-        if [ -f "$req_file" ]; then
-            git update-index --skip-worktree "$req_file" 2>/dev/null || true
+# Git Integration:
+# Automatically mark requirement files as "skip-worktree" to avoid accidental
+# commits.
+if command -v git >/dev/null 2>&1 && [ -d "${ROOT}/.git" ]; then
+    for req_file in "${REQS_TXT}" "${REQS_TEST_TXT}"; do
+        if [ -f "${req_file}" ]; then
+            git update-index --skip-worktree "${req_file}" 2>/dev/null || true
         fi
     done
 fi
 
-# Execute command
-"${COMMAND_MAP_FUNC[$COMMAND]}"
+# Route to the appropriate function
+"${COMMAND_MAP_FUNC[${SELECTED_CMD}]}"
