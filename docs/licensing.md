@@ -1,10 +1,6 @@
-# OctalFont Documentation
+# Licensing
 
-Welcome to the **OctalFont** documentation!
 
-This resource provides comprehensive information about the OctalFont project,
-including its design principles, technical details, and usage guidelines.
-See the sections below to navigate through the documentation.
 
 ---
 
