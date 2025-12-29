@@ -245,8 +245,9 @@ function clean_all {
 
 # Displays the help menu.
 function show_help {
-    echo -e "${BLUE}${FONT_FAMILY} Management Script${RESET}"
-    echo -e "${BLUE}Manages:${RESET} ${FONT_SUBFONTS[*]/#/${FONT_FAMILY}-}"
+    echo -e "${BLUE}Font Management Script - Version ${SCRIPT_VERSION}${RESET}"
+    echo -e "${BLUE}Font Family:${RESET} ${FONT_FAMILY} v${FONT_VERSION}"
+    echo -e "${BLUE}Subfonts:${RESET} ${FONT_SUBFONTS[*]/#/${FONT_FAMILY}-}"
     echo
     echo -e "${GREEN}Usage:${RESET} ${SCRIPT_NAME} [command] [-l|--log]"
     echo
