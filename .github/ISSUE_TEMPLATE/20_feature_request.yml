@@ -3,11 +3,12 @@ description: "Suggest an idea for our fonts"
 title: "[Suggestion]: "
 labels: [ "Suggestion" ]
 type: "Feature"
+projects: [ "OctalMesh/6" ]
 body:
 - type: markdown
   attributes:
     value: "Please search [here](https://github.com/OctalMesh/OctalFont/issues?q=label%3ASuggestion) to see if there is already an issue related to the feature you're requesting."
-    
+
 - type: textarea
   attributes:
     label: "Suggestion description"
@@ -15,7 +16,7 @@ body:
       A clear and concise description of your idea.
   validations:
     required: true
-    
+
 - type: textarea
   attributes:
     label: "Additional context"
@@ -30,7 +31,7 @@ body:
   attributes:
     label: "Acknowledgements"
     description: "Your issue will be closed if you haven't done these steps."
-    options: 
+    options:
       - label: "I have searched the existing issues and this is a new issue and not a duplicate of any another open issue."
         required: true
       - label: "I have written a short but informative title."

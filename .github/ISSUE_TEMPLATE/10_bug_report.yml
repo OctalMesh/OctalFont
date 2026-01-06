@@ -3,6 +3,7 @@ description: "Create a report about something that is not working"
 title: "[Bug]: "
 labels: [ "Bug" ]
 type: "Bug"
+projects: [ "OctalMesh/6" ]
 body:
 - type: markdown
   attributes:
