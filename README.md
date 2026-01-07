@@ -21,7 +21,7 @@
   -->
   <div>
     <!-- Repo Stars Badge -->
-    <a rel="noopener noreferrer" href="#">
+    <a rel="noopener noreferrer" href="https://github.com/OctalMesh/OctalFont/stargazers">
       <picture>
         <source media="(prefers-color-scheme: light)" srcset="https://img.shields.io/github/stars/OctalMesh/OctalFont?style=for-the-badge&logo=starship&color=363636&labelColor=464646" />
         <img alt="Stars" src="https://img.shields.io/github/stars/OctalMesh/OctalFont?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNiAxNiI+DQogIDxwYXRoIGZpbGw9IiMzNjM2MzYiIGQ9Ik04IC4yNWEuNzUuNzUgMCAwIDEgLjY3My40MThsMS44ODIgMy44MTUgNC4yMS42MTJhLjc1Ljc1IDAgMCAxIC40MTYgMS4yNzlsLTMuMDQ2IDIuOTcuNzE5IDQuMTkyYS43NTEuNzUxIDAgMCAxLTEuMDg4Ljc5MUw4IDEyLjM0N2wtMy43NjYgMS45OGEuNzUuNzUgMCAwIDEtMS4wODgtLjc5bC43Mi00LjE5NEwuODE4IDYuMzc0YS43NS43NSAwIDAgMSAuNDE2LTEuMjhsNC4yMS0uNjExTDcuMzI3LjY2OEEuNzUuNzUgMCAwIDEgOCAuMjVabTAgMi40NDVMNi42MTUgNS41YS43NS43NSAwIDAgMS0uNTY0LjQxbC0zLjA5Ny40NSAyLjI0IDIuMTg0YS43NS43NSAwIDAgMSAuMjE2LjY2NGwtLjUyOCAzLjA4NCAyLjc2OS0xLjQ1NmEuNzUuNzUgMCAwIDEgLjY5OCAwbDIuNzcgMS40NTYtLjUzLTMuMDg0YS43NS43NSAwIDAgMSAuMjE2LS42NjRsMi4yNC0yLjE4My0zLjA5Ni0uNDVhLjc1Ljc1IDAgMCAxLS41NjQtLjQxTDggMi42OTRaIi8+DQo8L3N2Zz4=&color=fff&labelColor=eaeaea" />
