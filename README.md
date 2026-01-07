@@ -145,16 +145,16 @@
     </a>
   </div>
   <h6>
-  • • •
-  <br /><br />
-  This project is dual-licensed under the <a rel="noopener noreferrer" href="LICENSE-MIT.md">MIT License</a> (code) 
-  and the <a rel="noopener noreferrer" href="LICENSE-OFL.md">SIL Open Font License (OFL)</a> (font).
-  <br><br>
-  <ul align="justify">
-    <li>You may freely use, modify, and distribute the code under the MIT License.</li>
-    <li>The font is licensed under the SIL OFL, allowing use, modification, and embedding, provided the license and attribution are retained.</li>
-    <li>Modified versions of the font must be renamed to avoid confusion with the original OctalFont.</li>
-    <li>Both code and font are provided "as is" without warranties.</li>
-  </ul>
-</h6>
+    • • •
+    <br /><br />
+    This project is dual-licensed under the <a rel="noopener noreferrer" href="LICENSE-MIT.md">MIT License</a> (code) 
+    and the <a rel="noopener noreferrer" href="LICENSE-OFL.md">SIL Open Font License (OFL)</a> (font).
+    <br /><br />
+    <ul align="justify">
+      <li>You may freely use, modify, and distribute the code under the MIT License.</li>
+      <li>The font is licensed under the SIL OFL, allowing use, modification, and embedding, provided the license and attribution are retained.</li>
+      <li>Modified versions of the font must be renamed to avoid confusion with the original OctalFont.</li>
+      <li>Both code and font are provided "as is" without warranties.</li>
+    </ul>
+  </h6>
 </div>
