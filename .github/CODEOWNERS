@@ -11,7 +11,7 @@
 # ============================================================================ #
 
 # GitHub configuration
-/.github/      @OctalMesh/development
+/.github/      @OctalMesh/core
 .editorconfig  @OctalMesh/development
 .gitattributes @OctalMesh/development
 .gitignore     @OctalMesh/development
