@@ -1,41 +1,106 @@
+<!--suppress HtmlDeprecatedAttribute -->
 <h1 align="center">Contributing to OctalFont</h1>
 
 Thank you for your interest in **OctalFont**.
 
-This repository is maintained and developed by the OctalMesh design team. OctalFont is a curated typeface project, 
-and its design decisions, glyph shapes, metrics, and stylistic directions are managed internally.
+This repository is maintained and developed by the OctalMesh design team.
+OctalFont is a curated typeface project. Core design decisions, including glyph
+shapes, metrics, proportions, and stylistic direction are managed internally
+to preserve consistency and long-term vision.
 
-External contributions are limited, but feedback is welcome.
+## Code of Conduct
 
-## What you *can* do
+All contributors are expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).<br />
+Please be respectful, constructive, and professional in all interactions.
 
-You are welcome to:
+## How to Contribute
 
-- **Report bugs or issues** (rendering problems, broken glyphs, incorrect spacing, metadata errors)
-- **Suggest improvements** (readability, hinting, stylistic consistency)
-- **Request clarification** regarding licensing or usage
+You can contribute in the following ways:
 
-Please use GitHub Issues and provide:
+### 🐞 Reporting Bugs
 
-- Clear description of the problem or suggestion
-- Screenshots or samples when applicable
-- Information about environment (OS, app, browser, font version)
+Bug reports help improve quality and reliability of the font.
+
+When opening an issue, please include:
+
+- A clear and descriptive title
+- Steps to reproduce the issue (if applicable)
+- Expected and actual behavior
+- Environment details (OS, application, browser, font version)
+- Screenshots, font samples, or specimen images when relevant
+
+Please search existing issues before opening a new one.<br />
+Well-documented reports help us act faster and more accurately.
+
+### 💡 Suggesting Improvements
+
+Suggestions are welcome, especially when they improve quality or usability.
+
+Please provide:
+
+- A clear description of the problem or limitation
+- Why the change would be beneficial
+- Context or examples where the issue appears
+
+Note that suggestions related to design direction may be discussed but are
+not guaranteed to be accepted.
+
+### 🔧 Submitting Pull Requests
+
+1. Fork the repository
+2. Create a new branch from the default branch
+3. Make your changes, following existing style and conventions
+4. Commit with clear, meaningful messages
+5. Push your branch and open a pull request
+
+Pull requests related to the font design itself may be closed without review
+unless explicitly requested by the OctalMesh team.
+
+Pull requests related to code (build scripts, tooling, tests, CI, or
+infrastructure) may be considered if they:
+
+- Are clearly scoped
+- Follow existing project structure and conventions
+- Do not alter the visual or stylistic output of the font
+
+Please ensure that:
+
+- The project builds successfully
+- Tests pass
+- Changes are focused and not overly broad
+- Related issues are referenced where relevant
 
 ## What we *do not* accept
 
 At this time, we do not accept:
 
-- Pull requests with new glyphs, font styles, or design changes
+- Pull requests introducing new glyphs, font styles, or design changes
 - Stylistic redesigns or alternative interpretations of the typeface
-- Automated or bulk-generated modifications
+- Automated, bulk-generated, or speculative modifications
 
-This helps us keep the font consistent, intentional, and maintainable.
+This policy helps keep the font cohesive, intentional, and maintainable over
+time.
 
-## Pull Requests
+## Review Process
 
-Pull requests may be closed without review unless explicitly requested by the OctalMesh team.
-If a contribution is needed, it will be coordinated directly.
+- Maintainers may request changes or clarification
+- Reviews focus on correctness, clarity, and maintainability
+- Approval does not guarantee immediate merge
+
+All decisions are made in the interest of long-term project quality and design
+consistency.
+
+## Licensing
+
+- Font files are licensed under the [SIL Open Font License (OFL)](LICENSE-OFL.md)
+- Source code, scripts, and tooling are licensed under the [MIT License](LICENSE-MIT.md)
+
+By contributing, you agree that your contribution will be licensed under the
+same license applicable to the part of the project you are contributing to.
 
 #
 
-<h6 align="center">Thank you for helping make OctalFont better, even good typography benefits from good feedback ❤️</h6>
+<h6 align="center">
+  Thank you for helping improve OctalFont ❤️<br />
+  Even the strictest typography benefits from precise feedback.
+</h6>
