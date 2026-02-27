@@ -6,6 +6,7 @@ build/
 builds/
 dist/
 out/
+fonts/
 *.egg-info/
 .eggs/
 logs/
