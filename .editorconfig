@@ -12,7 +12,7 @@ max_line_length = 120
 ij_visual_guides = 80, 120
 ij_continuation_indent_size = 8
 
-[*.{yml,md,svg,glif,gliphs,plist,ufo,fea}]
+[*.{yml,yaml,md,svg,glif,gliphs,plist,ufo,fea}]
 indent_size= 2
 
 [*.json]
