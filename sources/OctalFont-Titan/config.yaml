@@ -1,0 +1,44 @@
+# ==============================================================================
+# OctalFont-Titan - gftools builder configuration
+#
+# Build command (run from repository root):
+#   gftools builder sources/OctalFont-Titan/config.yaml
+#
+# Sources are resolved relative to this file's directory.
+# Output is resolved relative to the repository root.
+# ==============================================================================
+
+# ----------------------------------------------------------------------------
+# Sources
+# .designspace files are the canonical source of truth.
+# .glyphs / .glyphx files are converted to UFO/designspace on the fly.
+# ----------------------------------------------------------------------------
+sources:
+  - OctalFont-Titan.designspace
+
+familyName: OctalFont Titan
+
+# ----------------------------------------------------------------------------
+# Output
+# Paths are relative to this config file's parent directory.
+# Use ../../fonts/... to write into the repo-level fonts/ folder.
+# ----------------------------------------------------------------------------
+outputDir: "../../fonts/OctalFont-Titan"
+
+# ----------------------------------------------------------------------------
+# Build targets
+# ----------------------------------------------------------------------------
+buildVariable: false  # Requires >=2 masters; set true once Bold/Light are added
+buildTTF: true        # Build static TrueType instances
+buildOTF: true        # Build static OpenType (CFF) instances
+buildWebfont: true    # Build WOFF2 web fonts
+# Post-processing
+# ----------------------------------------------------------------------------
+autohintTTF: true          # Run ttfautohint on static TTF outputs
+checkCompatibility: true   # Verify master compatibility before building
+
+# ----------------------------------------------------------------------------
+# Quality & cleanup
+# ----------------------------------------------------------------------------
+logLevel: WARNING
+cleanUp: true   # Remove intermediate temp files after a successful build

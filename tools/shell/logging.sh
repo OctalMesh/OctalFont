@@ -5,31 +5,32 @@
 # Provides functions to print messages with timestamps and color coding.       #
 #                                                                              #
 # Available functions:                                                         #
-#   debug <message>   - Detailed debug information (Purple).                   #
-#   info <message>    - Informational messages (Blue).                         #
-#   success <message> - Success messages (Green).                              #
-#   warn <message>    - Warning messages (Yellow).                             #
-#   error <message>   - Error messages (Red).                                  #
-#   fatal <message>   - Fatal failure (Bold Red).                              #
+#   debug <message>   Detailed debug information (Purple).                     #
+#   info <message>    Informational messages (Blue).                           #
+#   success <message> Success messages (Green).                                #
+#   warn <message>    Warning messages (Yellow).                               #
+#   error <message>   Error messages (Red).                                    #
+#   fatal <message>   Fatal failure (Bold Red).                                #
 #                                                                              #
 # Environment Variables:                                                       #
-#   LOG_LEVEL      - Set the logging level (DEBUG, INFO, SUCCESS, WARN, ERROR, #
-#                    FATAL, OFF). Default is DEBUG.                            #
-#   LOG_DIR        - Directory to save log files. Default is empty.            #
-#   LOG_ERASE_DAYS - Number of days to keep log files. Default is '7'.         #
-#                                                                              #
-# Example usage:                                                               #
-#   export LOG_LEVEL=INFO                                                      #
-#   export LOG_DIR="./logs"                                                    #
-#   source logging.sh                                                          #
-#   info "This is an info message."                                            #
+#   LOG_DIR           Directory to save log files. Default is empty.           #
+#   LOG_LEVEL         Set the logging level (DEBUG, INFO, SUCCESS, WARN, ERROR #
+#                     FATAL, OFF). Default is DEBUG.                           #
+#   LOG_ERASE_DAYS    Number of days to keep log files. Default is '-1'.       #
+#                     (-1 means no cleanup)                                    #
 # ============================================================================ #
 
+# Guard against double-sourcing
+
+[[ -n "${_OCTALFONT_LOGGING_LOADED:-}" ]] && return 0
+readonly _OCTALFONT_LOGGING_LOADED=1
+
 # ============================================================================ #
-#                                   Variables                                  #
+#                                  Variables                                   #
 # ============================================================================ #
 
 # Color codes
+
 readonly PURPLE='\033[0;35m'
 readonly BLUE='\033[0;34m'
 readonly GREEN='\033[0;32m'
@@ -38,17 +39,27 @@ readonly RED='\033[0;31m'
 readonly BOLD_RED='\033[1;31m'
 readonly RESET='\033[0m'
 
-readonly LOG_MSG_PATTERN="[%s] [%s] [PID %s]: %b"
+readonly LOG_MSG_PATTERN="[%s] [%s] [PID %s]: %s"
 readonly LOG_TIMESTAMP_FORMAT="%H:%M:%S"
 readonly SED_FILTER="s/\x1b\[[0-9;]*[mGJKHF]//g"
 
 # Configuration (Can be overridden via environment variables)
-: "${LOG_LEVEL:=DEBUG}"
+
 : "${LOG_DIR:=}"
-: "${LOG_ERASE_DAYS:=7}"
+: "${LOG_LEVEL:=DEBUG}"
+: "${LOG_ERASE_DAYS:=-1}"
 
 # Map levels to numeric values for comparison
-declare -A _LOG_PRIORITIES=([DEBUG]=0 [INFO]=1 [SUCCESS]=1 [WARN]=2 [ERROR]=3 [FATAL]=4 [OFF]=5)
+
+declare -A _LOG_PRIORITIES=(
+    [DEBUG]=0
+    [INFO]=1
+    [SUCCESS]=1
+    [WARN]=2
+    [ERROR]=3
+    [FATAL]=4
+    [OFF]=5
+)
 
 # Detect if colors should be used
 _USE_COLOR=true
@@ -56,46 +67,48 @@ if [[ ! -t 1 || -n "${NO_COLOR:-}" ]]; then
     _USE_COLOR=false
 fi
 
-# Internal variable to hold current log file path
-_CURRENT_LOG_FILE_PATH=""
-
 # ============================================================================ #
 #                                  Functions                                   #
 # ============================================================================ #
 
-# Start session logging by creating a log file in the specified LOG_DIR.
-# The log file is named with the current date and an incrementing index to avoid
-# overwriting existing logs.
+# Start session logging by creating a log file inside the specified log
+# directory.
+#
+# Environment variables honoured:
+#   SESSION_LOG_DIR - Directory to save session log (default: LOG_DIR)
 function start_session_logging() {
-    local log_dir
-    log_dir="$(realpath "${LOG_DIR}")"
+    local log_dir log_file
+
+    log_dir="$(realpath -m "${SESSION_LOG_DIR:-${LOG_DIR}}")"
+    log_file="${log_dir}/session.log"
+
+    [[ -n "${log_dir}" ]] || return 0
+
+    # Prepare log directory and clean up old logs before starting the session
+    cleanup_logs "${LOG_ERASE_DAYS}"
     mkdir -p "${log_dir}"
 
-    local date_str
-    date_str=$(date +%Y-%m-%d)
-    local index=1
-
-    # Clean up old log files (older than LOG_ERASE_DAYS)
-    find "${log_dir}" -name "*.log" -type f -mtime +"${LOG_ERASE_DAYS}" -delete 2>/dev/null
-
-    # Search for the next available log file name
-    while true; do
-        local formatted_index
-        formatted_index=$(printf "%03d" "${index}")
-        local candidate="${log_dir}/${date_str}-${formatted_index}.log"
-
-        if [[ ! -f "$candidate" ]]; then
-            _CURRENT_LOG_FILE="$candidate"
-            break
-        fi
-
-        ((index++))
-    done
-
     # Redirect all output to the log file while still printing to console
-    exec > >(tee -a >(sed -r "${SED_FILTER}" >> "${_CURRENT_LOG_FILE}") ) 2>&1
+    exec > >(tee -a >(sed -r "${SED_FILTER}" >> "${log_file}") ) 2>&1
 
-    info "Session logging started. Saving to: ${_CURRENT_LOG_FILE}"
+    info "Session logging started. Saving to: ${log_file}"
+}
+
+# Clean up old log directories in LOG_DIR that are older than the specified
+# number of days. If no argument is given, it defaults to -1 which means no
+# cleanup.
+#
+# Arguments:
+#   $1 - Number of days to keep logs (default: -1, which means no cleanup)
+function cleanup_logs() {
+    [[ -z "${LOG_DIR}" ]] && return 0
+
+    local erase_days="${1:=-1}"
+
+    if [[ "${erase_days}" -ne -1 ]]; then
+        find "${LOG_DIR}" -mindepth 1 -maxdepth 1 -type d \
+            -mtime +"${erase_days}" -exec rm -rf {} + 2>/dev/null || true
+    fi
 }
 
 # Internal function to handle the logic of printing and saving logs.

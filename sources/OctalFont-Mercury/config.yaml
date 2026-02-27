@@ -1,0 +1,42 @@
+# ==============================================================================
+# OctalFont-Mercury - gftools builder configuration
+#
+# Build command (run from repository root):
+#   gftools builder sources/OctalFont-Mercury/config.yaml
+#
+# Sources are resolved relative to this file's directory.
+# Output is resolved relative to the repository root.
+# ==============================================================================
+
+# ----------------------------------------------------------------------------
+# Sources
+# ----------------------------------------------------------------------------
+sources:
+  - OctalFont-Mercury.designspace
+
+familyName: OctalFont Mercury
+
+# ----------------------------------------------------------------------------
+# Output
+# ----------------------------------------------------------------------------
+outputDir: "../../fonts/OctalFont-Mercury"
+
+# ----------------------------------------------------------------------------
+# Build targets
+# ----------------------------------------------------------------------------
+buildVariable: true
+buildTTF: true
+buildOTF: false
+buildWebfont: false
+
+# ----------------------------------------------------------------------------
+# Post-processing
+# ----------------------------------------------------------------------------
+autohintTTF: true
+checkCompatibility: true
+
+# ----------------------------------------------------------------------------
+# Quality & cleanup
+# ----------------------------------------------------------------------------
+logLevel: WARNING
+cleanUp: true

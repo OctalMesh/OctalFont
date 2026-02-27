@@ -1,0 +1,34 @@
+# ==============================================================================
+# OctalFont - Project Build Configuration
+# Used by the `octalfont` CLI to orchestrate family builds.
+# ==============================================================================
+
+project: OctalFont
+
+families:
+  - id: titan
+    name: OctalFont-Titan
+    # active  -> included in --all builds by default
+    # wip     -> excluded from --all; must be built explicitly
+    # frozen  -> permanently excluded
+    status: active
+    config: OctalFont-Titan/config.yaml
+
+  - id: cuprum
+    name: OctalFont-Cuprum
+    status: wip
+    config: OctalFont-Cuprum/config.yaml
+
+  - id: mercury
+    name: OctalFont-Mercury
+    status: wip
+    config: OctalFont-Mercury/config.yaml
+
+output:
+  # Root output directory relative to the repository root
+  dir: fonts
+
+logging:
+  dir: logs
+  # Log files older than this number of days will be deleted automatically
+  retention_days: 30

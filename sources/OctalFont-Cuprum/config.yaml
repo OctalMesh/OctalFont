@@ -1,0 +1,44 @@
+# ==============================================================================
+# OctalFont-Cuprum - gftools builder configuration
+#
+# Build command (run from repository root):
+#   gftools builder sources/OctalFont-Cuprum/config.yaml
+#
+# Sources are resolved relative to this file's directory.
+# Output is resolved relative to the repository root.
+# ==============================================================================
+
+# ----------------------------------------------------------------------------
+# Sources
+# ----------------------------------------------------------------------------
+sources:
+  - OctalFont-Cuprum.designspace
+
+familyName: OctalFont Cuprum
+
+# ----------------------------------------------------------------------------
+# Output
+# ----------------------------------------------------------------------------
+outputDir: "../../fonts/OctalFont-Cuprum"
+
+# ----------------------------------------------------------------------------
+# Build targets
+# Cuprum has explicit Light / Regular / Bold masters -> static family only.
+# Set buildVariable: true once a variation axis is defined in the designspace.
+# ----------------------------------------------------------------------------
+buildVariable: false  # Enable once axis interpolation is ready
+buildTTF: true
+buildOTF: false
+buildWebfont: false
+
+# ----------------------------------------------------------------------------
+# Post-processing
+# ----------------------------------------------------------------------------
+autohintTTF: true
+checkCompatibility: true
+
+# ----------------------------------------------------------------------------
+# Quality & cleanup
+# ----------------------------------------------------------------------------
+logLevel: WARNING
+cleanUp: true
