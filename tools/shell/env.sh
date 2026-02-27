@@ -77,7 +77,7 @@ function env_activate() {
 
 # Creates a fresh venv and installs all dependencies from requirements.txt.
 function env_setup() {
-    info "Setting up virtual environment at ${VENV_DIR} …"
+    info "Setting up virtual environment at ${VENV_DIR}..."
 
     local base_python=""
     for _py_candidate in python3 python py; do
@@ -100,7 +100,7 @@ function env_setup() {
     info "Using Python ${py_ver} (${base_python})"
 
     if [[ ! -d "${VENV_DIR}" ]]; then
-        debug "Creating virtualenv …"
+        debug "Creating virtualenv..."
         "${base_python}" -m venv "${VENV_DIR}"
     else
         debug "Virtualenv already exists, reusing."
@@ -116,7 +116,7 @@ function env_setup() {
         venv_python="${VENV_DIR}/bin/python"
     fi
 
-    info "Upgrading pip …"
+    info "Upgrading pip..."
     "${venv_python}" -m pip install --quiet --upgrade pip
 
     local req_file="${REPO_ROOT}/requirements.txt"
@@ -125,7 +125,7 @@ function env_setup() {
         return 1
     fi
 
-    info "Installing dependencies from requirements.txt …"
+    info "Installing dependencies from requirements.txt..."
     "${venv_python}" -m pip install --quiet -r "${req_file}"
 
     success "Environment ready."
@@ -139,7 +139,7 @@ function env_setup() {
 function env_check() {
     local had_error=0
 
-    info "Checking build environment …"
+    info "Checking build environment..."
 
     # Activate venv first so venv-only tools (ninja, pip) are on PATH
     env_activate 2>/dev/null || true

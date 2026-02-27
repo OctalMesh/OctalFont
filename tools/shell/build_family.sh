@@ -89,7 +89,7 @@ function build_family() {
         svg_count=$(find "${svg_dir}" -name "*.svg" -type f 2>/dev/null | wc -l)
 
         if (( svg_count > 0 )); then
-            info "[${fam_name}] No DesignSpace found - generating UFO from ${svg_count} SVG file(s) …"
+            info "[${fam_name}] No DesignSpace found - generating UFO from ${svg_count} SVG file(s)..."
 
             if ! "${PYTHON}" "${REPO_ROOT}/tools/python/svg_to_ufo.py" \
                     "${cfg_dir}" 2>&1 | tee -a "${build_log}"; then
@@ -106,7 +106,7 @@ function build_family() {
 
     # Step 1: gftools builder
 
-    info "[${fam_name}] Running gftools builder …"
+    info "[${fam_name}] Running gftools builder..."
     debug "[${fam_name}] Config: ${fam_config}"
     debug "[${fam_name}] Log:    ${build_log}"
 
@@ -138,7 +138,7 @@ function build_family() {
     fix_targets=$(_find_built_fonts "${FONTS_DIR}/${fam_name}")
 
     if [[ -n "${fix_targets}" ]]; then
-        debug "[${fam_name}] Running production fixups …"
+        debug "[${fam_name}] Running production fixups..."
 
         # shellcheck disable=SC2086  # word-splitting is intentional here
         "${PYTHON}" "${REPO_ROOT}/tools/python/fix_production.py" \
@@ -205,7 +205,7 @@ function proof_family() {
 
     mkdir -p "${out_dir}"
 
-    info "[${fam_name}] Running diffenator2 proof …"
+    info "[${fam_name}] Running diffenator2 proof..."
     # shellcheck disable=SC2086
     if ! diffenator2 proof ${fonts} -o "${out_dir}" 2>&1; then
         error "[${fam_name}] diffenator2 proof failed."
@@ -261,7 +261,7 @@ function _run_fontbakery_qa() {
     local qa_report_dir="${REPO_ROOT}/out/fontbakery/${fam_id}"
     mkdir -p "${qa_report_dir}"
 
-    info "[${fam_name}] Running fontbakery …"
+    info "[${fam_name}] Running fontbakery..."
     debug "[${fam_name}] Fonts under test:"
     while IFS= read -r f; do debug "  ${f}"; done <<< "${fonts}"
 

@@ -40,7 +40,7 @@ function cmd_clean() {
         [[ -z "${triple}" ]] && continue
         _unpack_family "${triple}"
 
-        info "Cleaning ${FAM_NAME} …"
+        info "Cleaning ${FAM_NAME}..."
 
         # Compiled font output (fonts/<Family>/)
         # FONTS_DIR is defined in common.sh as ${REPO_ROOT}/fonts.

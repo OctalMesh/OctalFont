@@ -12,7 +12,7 @@ Pipeline
   sources/<Family>/<Family>.designspace
         │
         ▼  (gftools builder / fontmake)
-  fonts/<Family>/…
+  fonts/<Family>/...
 
 SVG coordinate assumptions
 --------------------------

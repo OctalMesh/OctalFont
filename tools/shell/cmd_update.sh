@@ -53,7 +53,7 @@ function cmd_update() {
         _venv_python="${VENV_DIR}/bin/python"
     fi
 
-    info "Upgrading pip-tools …"
+    info "Upgrading pip-tools..."
     "${_venv_python}" -m pip install --quiet --upgrade pip pip-tools
 
     if [[ ! -f "${reqs_in}" ]]; then
@@ -61,21 +61,32 @@ function cmd_update() {
         exit 1
     fi
 
-    info "Compiling requirements.in -> requirements.txt …"
+    info "Compiling requirements.in -> requirements.txt..."
     "${pip_compile}" --upgrade --resolver=backtracking "${reqs_in}"
 
     if (( OPT_UPDATE_TEST )) && [[ -f "${reqs_test_in}" ]]; then
-        info "Compiling requirements-test.in -> requirements-test.txt …"
+        info "Compiling requirements-test.in -> requirements-test.txt..."
         "${pip_compile}" --upgrade --resolver=backtracking \
             --constraint "${reqs_txt}" \
             "${reqs_test_in}"
     fi
 
-    info "Syncing virtual environment …"
+    info "Syncing virtual environment..."
     if (( OPT_UPDATE_TEST )) && [[ -f "${reqs_test_txt}" ]]; then
         "${pip_sync}" "${reqs_txt}" "${reqs_test_txt}"
     else
         "${pip_sync}" "${reqs_txt}"
+    fi
+
+    # Git Integration:
+    # Automatically mark requirement files as "skip-worktree" to avoid
+    # accidental commits.
+    if command -v git >/dev/null 2>&1 && [[ -d "${REPO_ROOT}/.git" ]]; then
+        for req_file in "${reqs_txt}" "${reqs_test_txt}"; do
+            if [[ -f "${req_file}" ]]; then
+                git update-index --skip-worktree "${req_file}" 2>/dev/null || true
+            fi
+        done
     fi
 
     success "Dependencies updated and environment synchronized."
