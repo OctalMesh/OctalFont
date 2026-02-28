@@ -65,6 +65,7 @@
     <a rel="noopener noreferrer" href="docs/design/README.md">Design Overview</a>
     ·
     <a rel="noopener noreferrer" href="docs/technical/build.md">Build Guide</a>
+    <br /><br />
   </h6>
   <!--
   =====================
