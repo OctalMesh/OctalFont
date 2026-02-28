@@ -9,10 +9,10 @@ to UFO master.
 
 ```mermaid
 flowchart LR
-    A["Sketchbook"] --> B["Adobe Illustrator\nai/"]
-    B --> C["SVG vector\nsvg/"]
-    C --> D["UFO master\nufo/"]
-    D --> E["Font files\nTTF / OTF / WOFF"]
+    A["Sketchbook"] --> B["Adobe Illustrator<br/>ai/"]
+    B --> C["SVG vector<br/>svg/"]
+    C --> D["UFO master<br/>ufo/"]
+    D --> E["Font files<br/>TTF / OTF / WOFF"]
 ```
 
 ### 0. Physical Sketch
