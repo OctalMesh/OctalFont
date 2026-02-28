@@ -11,8 +11,7 @@
 
 ## Design
 
-- [Overview](../design/overview.md)
-- [Evolution](../design/evolution.md)
+- [Overview](../design/README.md)
 - [Sketches](../design/sketches/README.md)
 
 ## Technical

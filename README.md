@@ -59,19 +59,74 @@
     <a rel="noopener noreferrer" href="LICENSE-MIT.md">License MIT</a>
     ·
     <a rel="noopener noreferrer" href="LICENSE-OFL.md">License OFL</a>
+    <br />
+    <a rel="noopener noreferrer" href="docs/README.md">Full Documentation</a>
+    ·
+    <a rel="noopener noreferrer" href="docs/design/README.md">Design Overview</a>
+    ·
+    <a rel="noopener noreferrer" href="docs/technical/build.md">Build Guide</a>
   </h6>
   <!--
   =====================
        DESCRIPTION
   =====================
   -->
-  <p>
-    A clean, geometric typeface developed as part of the OctalMesh design system.<br />
-    Built around strict constraints, modular geometry, and reproducible forms.
-  </p>
+  <div align="justify">
+    <p>
+      <strong>OctalFont</strong> is a geometric typeface family developed as
+      part of the <a rel="noopener noreferrer" href="https://octalmesh.com">OctalMesh</a>
+      design system. Every glyph originates as a hand-drawn sketch in a physical
+      sketchbook, gets refined as a clean vector, and is then compiled into
+      production-ready TTF, OTF, and WOFF files through a fully automated
+      pipeline.
+      <br /><br />
+      The family name <em>«OctalFont»</em> is the registered OFL reserved name.
+      Each member typeface - <em>Titan</em>, <em>Cuprum</em>, <em>Mercury</em> -
+      is named after a material whose physical character directly mirrors the
+      visual personality of that font.
+    </p>
+  </div>
+  <br />
   <!--
   =====================
-          BODY
+      FONT FAMILIES
+  =====================
+  -->
+  <h2>Font Families</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Family</th>
+        <th>Named after</th>
+        <th>Character</th>
+        <th>Intended use</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>OctalFont Titan</strong></td>
+        <td>Titanium</td>
+        <td>Heavy, solid, logotype-grade. Conveys strength and permanence.</td>
+        <td>Logos, headlines, product branding across all base OctalMesh products.</td>
+      </tr>
+      <tr>
+        <td><strong>OctalFont Cuprum</strong></td>
+        <td>Copper</td>
+        <td>Thin, regular-weight, monospaced. Flexible via axis settings.</td>
+        <td>UI labels, code, body copy - wherever clarity and neutrality matter.</td>
+      </tr>
+      <tr>
+        <td><strong>OctalFont Mercury</strong></td>
+        <td>Mercury</td>
+        <td>Derived from Titan, but with fluid rounded strokes. Smooth and flowing.</td>
+        <td>Portfolios and advertising for minimalist, rounded product lines. Built last.</td>
+      </tr>
+    </tbody>
+  </table>
+  <br />
+  <!--
+  =====================
+        ACTIVITY
   =====================
   -->
   <h1>Activity</h1>
@@ -147,7 +202,7 @@
   <h6>
     • • •
     <br /><br />
-    This project is dual-licensed under the <a rel="noopener noreferrer" href="LICENSE-MIT.md">MIT License</a> (code) 
+    This project is dual-licensed under the <a rel="noopener noreferrer" href="LICENSE-MIT.md">MIT License</a> (code)
     and the <a rel="noopener noreferrer" href="LICENSE-OFL.md">SIL Open Font License (OFL)</a> (font).
     <br /><br />
     <ul align="justify">
