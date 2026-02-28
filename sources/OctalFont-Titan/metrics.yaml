@@ -31,19 +31,19 @@ license: >-
 license_url: "https://scripts.sil.org/OFL"
 
 # Font dimensions
-upm:        1000      # Units Per Em
-ascender:   1050      # Line-box ascender  (sTypoAscender / hheaAscender); sum with |descender| must be >=1200
-descender:  -300      # Line-box descender (sTypoDescender / hheaDescender); provides room for diacritics/tails
-cap_height:  700      # Height of flat-top uppercase (maps to SVG y = 0)
-x_height:    500      # Height of flat-top lowercase
+upm:        1000   # Units Per Em
+ascender:   1050   # Line-box ascender  (sTypoAscender / hheaAscender); sum with |descender| must be >=1200
+descender:  -300   # Line-box descender (sTypoDescender / hheaDescender); provides room for diacritics/tails
+cap_height: 700    # Height of flat-top uppercase (maps to SVG y = 0)
+x_height:   500    # Height of flat-top lowercase
 
 # SVG artboard reference
-svg_ref_size: 1000    # SVG viewBox height (and width, assumed square)
+svg_ref_size: 1000 # SVG viewBox height (and width, assumed square)
 
 # Spacing
-side_bearing_left:   0
-side_bearing_right:  0
+side_bearing_left:  100
+side_bearing_right: 100
 
 # Miscellaneous
 underline_position:  -100
-underline_thickness:   50
+underline_thickness: 50

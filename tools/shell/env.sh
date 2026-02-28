@@ -53,6 +53,75 @@ readonly -A _REQUIRED_PY_PKGS=(
 #                                  Functions                                   #
 # ============================================================================ #
 
+# Compiles requirements.in / requirements-test.in into lock files and syncs
+# the virtual environment.  Called by env_setup (automatically) and
+# cmd_update (manually).
+#
+# Requires the venv to already be activated.
+function _update_lockfiles() {
+    local _venv_bin
+    if [[ -d "${VENV_DIR}/Scripts" ]]; then
+        _venv_bin="${VENV_DIR}/Scripts"
+    else
+        _venv_bin="${VENV_DIR}/bin"
+    fi
+
+    local venv_python
+    if [[ -f "${VENV_DIR}/Scripts/python.exe" ]]; then
+        venv_python="${VENV_DIR}/Scripts/python"
+    else
+        venv_python="${VENV_DIR}/bin/python"
+    fi
+
+    local reqs_in="${REPO_ROOT}/requirements.in"
+    local reqs_txt="${REPO_ROOT}/requirements.txt"
+    local reqs_test_in="${REPO_ROOT}/requirements-test.in"
+    local reqs_test_txt="${REPO_ROOT}/requirements-test.txt"
+
+    if [[ ! -f "${reqs_in}" ]]; then
+        fatal "requirements.in not found at ${reqs_in}"
+        return 1
+    fi
+
+    info "Upgrading pip-tools..."
+    "${venv_python}" -m pip install --quiet --upgrade pip pip-tools
+
+    local pip_compile="${_venv_bin}/pip-compile"
+    local pip_sync="${_venv_bin}/pip-sync"
+
+    info "Compiling requirements.in -> requirements.txt..."
+    "${pip_compile}" --upgrade --resolver=backtracking "${reqs_in}"
+
+    if [[ -f "${reqs_test_in}" ]]; then
+        info "Compiling requirements-test.in -> requirements-test.txt..."
+        "${pip_compile}" --upgrade --resolver=backtracking \
+            --constraint "${reqs_txt}" \
+            "${reqs_test_in}"
+    fi
+
+    info "Syncing virtual environment..."
+    if [[ -f "${reqs_test_txt}" ]]; then
+        "${pip_sync}" "${reqs_txt}" "${reqs_test_txt}"
+    else
+        "${pip_sync}" "${reqs_txt}"
+    fi
+
+    # Git Integration:
+    # Automatically mark requirement files as "skip-worktree" to avoid
+    # accidental commits.
+    if command -v git >/dev/null 2>&1 && [[ -d "${REPO_ROOT}/.git" ]]; then
+        for req_file in "${reqs_txt}" "${reqs_test_txt}"; do
+            if [[ -f "${req_file}" ]]; then
+                git update-index --skip-worktree "${req_file}" 2>/dev/null || true
+            fi
+        done
+
+        debug "Lock files marked as skip-worktree (local only, not tracked by git)."
+    fi
+
+    success "Dependencies updated. Lock files are local-only and will not be committed."
+}
+
 # Activates the project virtual environment if it exists.
 # Returns 1 (without exiting) when no venv is found.
 function env_activate() {
@@ -75,7 +144,9 @@ function env_activate() {
     debug "Virtualenv activated: ${VENV_DIR}"
 }
 
-# Creates a fresh venv and installs all dependencies from requirements.txt.
+# Creates a fresh venv, compiles lock files from .in constraints, and
+# installs all dependencies.
+# One command does the full setup.
 function env_setup() {
     info "Setting up virtual environment at ${VENV_DIR}..."
 
@@ -119,14 +190,10 @@ function env_setup() {
     info "Upgrading pip..."
     "${venv_python}" -m pip install --quiet --upgrade pip
 
-    local req_file="${REPO_ROOT}/requirements.txt"
-    if [[ ! -f "${req_file}" ]]; then
-        fatal "requirements.txt not found at ${req_file}"
-        return 1
-    fi
-
-    info "Installing dependencies from requirements.txt..."
-    "${venv_python}" -m pip install --quiet -r "${req_file}"
+    _update_lockfiles || {
+        fatal "Failed to update lockfiles and virtual environment.";
+        exit 1;
+    }
 
     success "Environment ready."
 }

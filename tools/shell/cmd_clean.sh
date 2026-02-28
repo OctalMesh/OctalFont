@@ -62,9 +62,9 @@ function cmd_clean() {
         fi
 
         if [[ -n "${out_dir}" && -d "${out_dir}" ]]; then
-            debug "  Removing: ${out_dir}"
+            debug "Removing: ${out_dir}"
             rm -rf "${out_dir}"
-            success "  Removed font output: ${out_dir}"
+            success "Removed font output: ${out_dir}"
         fi
 
         # gftools/ninja build artifacts

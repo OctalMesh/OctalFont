@@ -610,13 +610,21 @@ def _svg_to_glyph(
     glyph: "ufoLib2.objects.Glyph",
     transform: _Transform,
     advance_width: Optional[float] = None,
+    lsb: int = 0,
+    rsb: int = 0,
 ) -> None:
-    """Parse SVG and draw contours into *glyph* using its point pen."""
+    """Parse SVG and draw contours into *glyph* using its point pen.
+
+    lsb / rsb are left / right side bearings in font units.  Contour
+    points are shifted right by *lsb* so the outline sits between the
+    bearings, and the advance width becomes body_width + lsb + rsb.
+    """
     viewbox_w, path_data = _load_svg_paths(svg_path)
     pen = glyph.getPointPen()
 
     if advance_width is None:
-        glyph.width = round(viewbox_w * transform.scale)
+        body_w = round(viewbox_w * transform.scale)
+        glyph.width = body_w + lsb + rsb
     else:
         glyph.width = round(advance_width)
 
@@ -641,9 +649,9 @@ def _svg_to_glyph(
             pen.beginPath()
             for ix, (px, py, st) in enumerate(subpath_pts):
                 if ix == 0 and not closed_contour:
-                    pen.addPoint((px, py), segmentType="move")
+                    pen.addPoint((px + lsb, py), segmentType="move")
                 else:
-                    pen.addPoint((px, py), segmentType=st)
+                    pen.addPoint((px + lsb, py), segmentType=st)
             pen.endPath()
 
         for seg_type, pts in parser.segments():
@@ -723,6 +731,8 @@ def build_ufo(
     cap_height = int(metrics.get("cap_height",  700))
     x_height   = int(metrics.get("x_height",   500))
     svg_ref    = float(metrics.get("svg_ref_size", 1000))
+    lsb        = int(metrics.get("side_bearing_left",  0))
+    rsb        = int(metrics.get("side_bearing_right", 0))
     family_raw = metrics.get("family_name", family_dir.name)
     # Remove weight suffix from the style-less family name
     family_name = family_raw.replace("OctalFont-", "OctalFont ")
@@ -833,7 +843,7 @@ def build_ufo(
             if cp is not None:
                 glyph.unicodes = [cp]
 
-            _svg_to_glyph(svg_file, glyph, transform)
+            _svg_to_glyph(svg_file, glyph, transform, lsb=lsb, rsb=rsb)
             imported += 1
             uni_str = f"U+{cp:04X}" if cp else "no-uni"
             print(f"    [{uni_str}]  {gname:20s}  ← {svg_file.relative_to(family_dir)}")

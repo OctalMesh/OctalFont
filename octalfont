@@ -32,12 +32,8 @@
 #                    and Python caches (__pycache__, .pytest_cache, .pyc).     #
 #                                                                              #
 # Options (env):                                                               #
-#   --setup          Create the venv and install requirements.txt              #
+#   --setup          Create the venv, compile lock files, install all deps     #
 #   --check          Verify tools only (default)                               #
-#                                                                              #
-# Options (update):                                                            #
-#   --test           Also recompile requirements-test.in                       #
-#                                                                              #
 # ============================================================================ #
 
 set -e
@@ -78,7 +74,6 @@ export OPT_ALL=0
 export OPT_NO_QA=0
 export OPT_VERBOSE=0
 export OPT_ENV_SETUP=0
-export OPT_UPDATE_TEST=0
 export OPT_CLEAN_DEEP=0
 
 # Python UTF-8 (avoids cp1251/cp866 encode errors when piped via tee)

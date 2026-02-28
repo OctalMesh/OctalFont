@@ -79,28 +79,26 @@ function build_family() {
     local t_start
     t_start=$(date +%s)
 
-    # Step 0: SVG -> UFO (auto, if SVGs present and designspace absent)
+    # Step 0: SVG -> UFO
 
-    local ds_file="${cfg_dir}/${fam_name}.designspace"
     local svg_dir="${cfg_dir}/svg"
 
-    if [[ ! -f "${ds_file}" ]] && [[ -d "${svg_dir}" ]]; then
+    if [[ -d "${svg_dir}" ]]; then
         local svg_count
         svg_count=$(find "${svg_dir}" -name "*.svg" -type f 2>/dev/null | wc -l)
 
         if (( svg_count > 0 )); then
-            info "[${fam_name}] No DesignSpace found - generating UFO from ${svg_count} SVG file(s)..."
+            info "[${fam_name}] Syncing UFO from ${svg_count} SVG file(s)..."
 
             if ! "${PYTHON}" "${REPO_ROOT}/tools/python/svg_to_ufo.py" \
                     "${cfg_dir}" 2>&1 | tee -a "${build_log}"; then
 
                 error "[${fam_name}] svg_to_ufo.py failed."
                 error "[${fam_name}] See log: ${build_log}"
-
                 return 1
             fi
 
-            success "[${fam_name}] SVG -> UFO conversion complete."
+            success "[${fam_name}] UFO sync complete."
         fi
     fi
 

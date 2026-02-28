@@ -28,7 +28,6 @@ export OPT_ALL=0
 export OPT_NO_QA=0
 export OPT_VERBOSE=0
 export OPT_ENV_SETUP=0
-export OPT_UPDATE_TEST=0
 export OPT_CLEAN_DEEP=0
 
 # ============================================================================ #
@@ -81,11 +80,8 @@ function _usage() {
     --setup          Create the venv and install requirements.txt
     --check          Verify tools only (default)
 
-  Options (update):
-    --test           Also recompile requirements-test.in
-
   First run:
-    1. octalfont env --setup      Create the venv and install all dependencies
+    1. octalfont env --setup      Create the venv, compile lock files, install deps
     2. octalfont env              Verify the environment is ready
     3. octalfont build --all      Build all active font families
     4. octalfont test  --all      Run QA checks on the built fonts
@@ -121,7 +117,6 @@ function _parse_args() {
             --verbose)     OPT_VERBOSE=1; export LOG_LEVEL="DEBUG" ;;
             --setup)       OPT_ENV_SETUP=1 ;;
             --check)       OPT_ENV_SETUP=0 ;;
-            --test)        OPT_UPDATE_TEST=1 ;;
             --deep)        OPT_CLEAN_DEEP=1 ;;
             --version)     echo "octalfont ${OCTALFONT_VERSION}"; exit 0 ;;
             --help|-h)     _usage; exit 0 ;;

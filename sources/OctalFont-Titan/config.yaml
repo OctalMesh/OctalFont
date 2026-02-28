@@ -32,6 +32,8 @@ buildVariable: false  # Requires >=2 masters; set true once Bold/Light are added
 buildTTF: true        # Build static TrueType instances
 buildOTF: true        # Build static OpenType (CFF) instances
 buildWebfont: true    # Build WOFF2 web fonts
+
+# ----------------------------------------------------------------------------
 # Post-processing
 # ----------------------------------------------------------------------------
 autohintTTF: true          # Run ttfautohint on static TTF outputs
