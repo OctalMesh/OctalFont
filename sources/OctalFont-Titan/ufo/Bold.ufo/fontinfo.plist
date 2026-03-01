@@ -19,17 +19,17 @@
     <key>openTypeHheaLineGap</key>
     <integer>0</integer>
     <key>openTypeNameDesigner</key>
-    <string></string>
+    <string>Nykon Hrytsyshyn</string>
     <key>openTypeNameDesignerURL</key>
-    <string></string>
+    <string>https://nykon.me</string>
     <key>openTypeNameLicense</key>
     <string>This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://scripts.sil.org/OFL</string>
     <key>openTypeNameLicenseURL</key>
-    <string>https://scripts.sil.org/OFL</string>
+    <string>https://github.com/OctalMesh/OctalFont/blob/dev/LICENSE-OFL.md</string>
     <key>openTypeNameManufacturer</key>
     <string>OctalMesh</string>
     <key>openTypeNameManufacturerURL</key>
-    <string></string>
+    <string>https://octalmesh.com</string>
     <key>openTypeOS2Type</key>
     <array/>
     <key>openTypeOS2TypoAscender</key>
