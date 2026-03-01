@@ -143,7 +143,7 @@ function build_family() {
             ${fix_targets} 2>&1 | tee -a "${build_log}" || true
     fi
 
-    #Step 2: Optional fontbakery QA
+    # Step 2: Optional fontbakery QA
 
     if [[ "${no_qa}" != "1" ]]; then
         _run_fontbakery_qa "${fam_id}" "${fam_name}" "${fam_config}" \

@@ -36,16 +36,13 @@
 #   --check          Verify tools only (default)                               #
 # ============================================================================ #
 
-set -e
-set -u
 set -euo pipefail
 
 # ============================================================================ #
 #                                  Variables                                   #
 # ============================================================================ #
 
-readonly OCTALFONT_VERSION="1.0.0"
-export OCTALFONT_VERSION
+export -rx OCTALFONT_VERSION="1.0.0"
 export LOG_LEVEL="INFO"
 
 # Define key directories relative to the script location

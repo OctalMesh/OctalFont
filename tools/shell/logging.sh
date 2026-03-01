@@ -134,11 +134,16 @@ function _print() {
 
     local term_color="${color}"
     local term_reset="${RESET}"
-    [[ "$_USE_COLOR" == "false" ]] && term_color="" && term_reset=""
+    if [[ "${_USE_COLOR}" == 'false' ]]; then
+        term_color=''
+        term_reset=''
+    fi
 
     # Use stderr for ERROR and FATAL
     local stream=1
-    [[ "$current_pri" -ge 3 ]] && stream=2
+    if [[ "${current_pri}" -ge 3 ]]; then
+        stream=2
+    fi
 
     # shellcheck disable=SC2059
     printf "${term_color}${LOG_MSG_PATTERN}${term_reset}\n" \
