@@ -151,7 +151,7 @@ function _get_families_to_process() {
 
         echo "${match}"
     elif (( OPT_ALL )); then
-        _yaml_families "" "${PROJECT_CONFIG}"
+        _yaml_families "!frozen" "${PROJECT_CONFIG}"
     else
         _yaml_families "active" "${PROJECT_CONFIG}"
     fi

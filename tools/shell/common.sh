@@ -65,7 +65,7 @@ declare -a _RESULT_DURATIONS=()
 function _yaml_get() {
     local key_path="$1"
     local yaml_file="$2"
-    "${PYTHON}" - "${yaml_file}" "${key_path}" <<'EOF'
+    "${PYTHON}" - "${yaml_file}" "${key_path}" <<'EOF' | tr -d '\r'
 import sys, yaml
 def get(doc, path):
     for k in path.split('.'):
@@ -82,18 +82,22 @@ EOF
 # status filter. An empty filter returns all families.
 #
 # Arguments:
-#   $1 - Status filter ("active", "inactive", or "" for all families)
+#   $1 - Status filter ("active", "wip", "frozen", or "" for all)
 #   $2 - Absolute path to the project config YAML
 function _yaml_families() {
     local status_filter="$1"
     local yaml_file="$2"
-    "${PYTHON}" - "${yaml_file}" "${status_filter}" <<'EOF'
+    "${PYTHON}" - "${yaml_file}" "${status_filter}" <<'EOF' | tr -d '\r'
 import sys, yaml
 with open(sys.argv[1]) as f:
     families = yaml.safe_load(f).get('families', [])
 status_filter = sys.argv[2]
 for fam in families:
-    if not status_filter or fam.get('status') == status_filter:
+    status = fam.get('status', '')
+    if status_filter.startswith('!'):
+        if status != status_filter[1:]:
+            print(f"{fam['id']}:{fam['name']}:{fam['config']}")
+    elif not status_filter or status == status_filter:
         print(f"{fam['id']}:{fam['name']}:{fam['config']}")
 EOF
 }

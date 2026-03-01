@@ -1,42 +1,37 @@
-# ==============================================================================
-# OctalFont-Mercury - gftools builder configuration
-#
-# Build command (run from repository root):
-#   gftools builder sources/OctalFont-Mercury/config.yaml
-#
-# Sources are resolved relative to this file's directory.
-# Output is resolved relative to the repository root.
-# ==============================================================================
+# ============================================================================ #
+#                                   Sources                                    #
+# ============================================================================ #
 
-# ----------------------------------------------------------------------------
-# Sources
-# ----------------------------------------------------------------------------
 sources:
   - OctalFont-Mercury.designspace
 
 familyName: OctalFont Mercury
 
-# ----------------------------------------------------------------------------
-# Output
-# ----------------------------------------------------------------------------
+# ============================================================================ #
+#                                    Output                                    #
+# ============================================================================ #
+
 outputDir: "../../fonts/OctalFont-Mercury"
 
-# ----------------------------------------------------------------------------
-# Build targets
-# ----------------------------------------------------------------------------
-buildVariable: true
-buildTTF: true
-buildOTF: false
-buildWebfont: false
+# ============================================================================ #
+#                                Build targets                                 #
+# ============================================================================ #
 
-# ----------------------------------------------------------------------------
-# Post-processing
-# ----------------------------------------------------------------------------
-autohintTTF: true
-checkCompatibility: true
+buildVariable: true   # Build variable font (requires >=2 masters)
+buildTTF: true        # Build static TrueType instances
+buildOTF: true        # Build static OpenType (CFF) instances
+buildWebfont: true    # Build WOFF2 web fonts
 
-# ----------------------------------------------------------------------------
-# Quality & cleanup
-# ----------------------------------------------------------------------------
+# ============================================================================ #
+#                              Post-processing                                 #
+# ============================================================================ #
+
+autohintTTF: true          # Run ttfautohint on static TTF outputs
+checkCompatibility: true   # Verify master compatibility before building
+
+# ============================================================================ #
+#                             Quality & cleanup                                #
+# ============================================================================ #
+
 logLevel: WARNING
-cleanUp: true
+cleanUp: true   # Remove intermediate temp files after a successful build

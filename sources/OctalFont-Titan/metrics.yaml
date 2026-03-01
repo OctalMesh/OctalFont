@@ -1,49 +1,87 @@
-# OctalFont-Titan - font metrics & metadata
-# All dimensions are in font units (UPM = 1000).
-#
-# SVG artboard is 1000 × 1000 (Y-down).
-# Coordinate mapping:
-#   y_font = cap_height − y_svg × (cap_height / svg_ref_size)
-#   x_font = x_svg      × (cap_height / svg_ref_size)
+# ============================================================================ #
+#                              OctalFont-Titan                                 #
+# ============================================================================ #
+# Font metrics and metadata for svg_to_ufo.py.                                 #
+# All dimensions are in font units (UPM = 1000).                               #
+#                                                                              #
+# SVG artboard is 1000 × 1000 (Y-down).                                        #
+# Coordinate mapping:                                                          #
+#   y_font = cap_height − y_svg × (cap_height / svg_ref_size)                  #
+#   x_font = x_svg      × (cap_height / svg_ref_size)                          #
+# ============================================================================ #
+
 family_name: OctalFont-Titan
 
-# Version
-# Follows Google Fonts convention: "MAJOR.MINOR" where MINOR is 3 digits.
-# Bump MINOR for glyph/spacing fixes; bump MAJOR for breaking design changes.
+# ============================================================================ #
+#                                  Versioning                                  #
+# ============================================================================ #
+# Follows Google Fonts convention: "MAJOR.MINOR" where MINOR is 3 digits.      #
+# Bump MINOR for glyph/spacing fixes; bump MAJOR for breaking design changes.  #
+# ============================================================================ #
+
 version: "1.000"
 
-# Identity
-# vendor_id must be exactly 4 ASCII characters (OS/2 achVendID).
-# Register yours at https://docs.microsoft.com/typography/vendors
-vendor_id: "OCTM"   # OctalMesh
-manufacturer: "OctalMesh"
-manufacturer_url: ""
-designer: ""
-designer_url: ""
+# ============================================================================ #
+#                                   Identity                                   #
+# ============================================================================ #
+# vendor_id: exactly 4 ASCII characters (OS/2 achVendID).                      #
+# Register at: https://docs.microsoft.com/typography/vendors                   #
+# ============================================================================ #
 
-# Legal
-# GF canonical pattern: "Copyright YEAR The FamilyName Project Authors (github-url)"
-copyright: "Copyright 2024 The OctalFont Titan Project Authors (https://github.com/OctalMesh/OctalFont)"
+vendor_id:        "OCTM"
+manufacturer:     "OctalMesh"
+manufacturer_url: "https://octalmesh.com"
+designer:         "Nykon Hrytsyshyn"
+designer_url:     "https://nykon.me"
+
+# ============================================================================ #
+#                                    Legal                                     #
+# ============================================================================ #
+# GF canonical copyright pattern:                                              #
+#   "Copyright YEAR The <Family> Project Authors (<repo-url>)"                 #
+# ============================================================================ #
+
+copyright: >-
+  Copyright 2024 The OctalFont Titan Project Authors
+  (https://github.com/OctalMesh/OctalFont)
+
 license: >-
   This Font Software is licensed under the SIL Open Font License,
   Version 1.1. This license is available with a FAQ at:
   https://scripts.sil.org/OFL
-license_url: "https://scripts.sil.org/OFL"
 
-# Font dimensions
+license_url: "https://github.com/OctalMesh/OctalFont/blob/dev/LICENSE-OFL.md"
+
+# ============================================================================ #
+#                              Vertical metrics                                #
+# ============================================================================ #
+# sTypo / hhea values drive line spacing (USE_TYPO_METRICS must be set).       #
+# Google Fonts requirement: ascender + |descender| >= 1200.                    #
+# Win values are recomputed from compiled glyphs by fix_production.py.         #
+# ============================================================================ #
+
 upm:        1000   # Units Per Em
-ascender:   1050   # Line-box ascender  (sTypoAscender / hheaAscender); sum with |descender| must be >=1200
-descender:  -300   # Line-box descender (sTypoDescender / hheaDescender); provides room for diacritics/tails
-cap_height: 700    # Height of flat-top uppercase (maps to SVG y = 0)
+ascender:   1050   # sTypoAscender / hheaAscender
+descender:  -300   # sTypoDescender / hheaDescender
+cap_height: 700    # Height of flat-top uppercase (SVG y = 0)
 x_height:   500    # Height of flat-top lowercase
 
-# SVG artboard reference
-svg_ref_size: 1000 # SVG viewBox height (and width, assumed square)
+# ============================================================================ #
+#                             SVG artboard reference                           #
+# ============================================================================ #
 
-# Spacing
+svg_ref_size: 1000   # SVG viewBox height (and width — assumed square)
+
+# ============================================================================ #
+#                                   Spacing                                    #
+# ============================================================================ #
+
 side_bearing_left:  75
 side_bearing_right: 75
 
-# Miscellaneous
+# ============================================================================ #
+#                                Miscellaneous                                 #
+# ============================================================================ #
+
 underline_position:  -100
 underline_thickness: 50

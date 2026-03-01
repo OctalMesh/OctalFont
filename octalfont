@@ -42,7 +42,7 @@ set -euo pipefail
 #                                  Variables                                   #
 # ============================================================================ #
 
-export -rx OCTALFONT_VERSION="1.0.0"
+declare -rx OCTALFONT_VERSION="1.0.0"
 export LOG_LEVEL="INFO"
 
 # Define key directories relative to the script location

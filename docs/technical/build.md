@@ -69,12 +69,12 @@ octalfont build --family=titan --verbose
 
 For each family the following files are produced under `fonts/<FamilyName>/`:
 
-| Target          | Flag            | Output             |
-|-----------------|-----------------|--------------------|
-| Static TrueType | `buildTTF`      | `ttf/*.ttf`        |
-| Static OpenType | `buildOTF`      | `otf/*.otf`        |
-| Web fonts       | `buildWebfont`  | `webfonts/*.woff2` |
-| Variable font   | `buildVariable` | `variable/*.ttf`   |
+| Target          | Flag            | Output                 |
+|-----------------|-----------------|------------------------|
+| Static TrueType | `buildTTF`      | `ttf/*.ttf`            |
+| Static OpenType | `buildOTF`      | `otf/*.otf`            |
+| Web fonts       | `buildWebfont`  | `webfonts/*.woff2`     |
+| Variable font   | `buildVariable` | `variable/*[wght].ttf` |
 
 ## Testing & Proofing
 

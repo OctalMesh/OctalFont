@@ -1,16 +1,16 @@
-# ==============================================================================
-# OctalFont - Project Build Configuration
-# Used by the `octalfont` CLI to orchestrate family builds.
-# ==============================================================================
+# ============================================================================ #
+# OctalFont - Project Build Configuration                                      #
+# Used by the `octalfont` CLI to orchestrate family builds.                    #
+# ============================================================================ #
 
 project: OctalFont
 
 families:
   - id: titan
     name: OctalFont-Titan
-    # active  -> included in --all builds by default
-    # wip     -> excluded from --all; must be built explicitly
-    # frozen  -> permanently excluded
+    # active  -> included in default builds and --all
+    # wip     -> excluded from default builds; included with --all or --family=
+    # frozen  -> always excluded; only reachable via --family=
     status: active
     config: OctalFont-Titan/config.yaml
 
@@ -21,7 +21,7 @@ families:
 
   - id: mercury
     name: OctalFont-Mercury
-    status: wip
+    status: frozen
     config: OctalFont-Mercury/config.yaml
 
 output:

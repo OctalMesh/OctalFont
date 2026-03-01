@@ -721,7 +721,13 @@ def build_ufo(
     from all SVG files found under ``<family_dir>/svg/``.
     Returns the UFO path.
     """
-    svg_root = family_dir / "svg"
+    # Look in svg/<weight_name>/ first; fall back to svg/ (flat / legacy layout).
+    svg_root_weight = family_dir / "svg" / weight_name
+    svg_root_flat   = family_dir / "svg"
+    if svg_root_weight.is_dir():
+        svg_root = svg_root_weight
+    else:
+        svg_root = svg_root_flat
     ufo_path = family_dir / "ufo" / f"{weight_name}.ufo"
 
     # Metrics
@@ -742,9 +748,12 @@ def build_ufo(
     # Collect SVG files
     svg_files: list[Path] = sorted(svg_root.rglob("*.svg"))
     if not svg_files:
-        raise FileNotFoundError(f"No SVG files found under {svg_root}")
+        raise FileNotFoundError(
+            f"No SVG files found under {svg_root}\n"
+            f"  Hint: add SVGs to svg/{weight_name}/ (per-weight) or svg/ (flat)"
+        )
 
-    print(f"  Found {len(svg_files)} SVG file(s) under {svg_root}")
+    print(f"  Found {len(svg_files)} SVG file(s) under {svg_root.relative_to(family_dir)}")
 
     if dry_run:
         for f in svg_files:
@@ -890,18 +899,29 @@ def build_designspace(
     ufo_paths: dict[str, Path],  # weight_name -> UFO path
     metrics: dict,
     dry_run: bool = False,
+    force: bool = False,
 ) -> Path:
     """
     Generate a DesignSpace file at ``<family_dir>/<FamilyName>.designspace``.
     For a single master (no variable), creates a minimal static-axis DS.
     For multiple masters keyed by weight value, creates a wght axis.
+
+    If the file already exists and ``force`` is False, the existing file is
+    left untouched (a warning is printed instead).
     """
-    family_raw  = metrics.get("family_name", family_dir.name)
-    family_name = family_raw.replace("OctalFont-", "OctalFont ")
+    family_name = metrics.get("family_name", family_dir.name)
     ds_path     = family_dir / f"{family_dir.name}.designspace"
 
     if dry_run:
-        print(f"  DesignSpace would be written -> {ds_path.relative_to(family_dir.parent.parent)}")
+        action = (
+            "overwrite" if (force or not ds_path.exists())
+            else "skip – already exists (use --force-designspace to overwrite)"
+        )
+        print(f"  DesignSpace would {action} -> {ds_path.relative_to(family_dir.parent.parent)}")
+        return ds_path
+
+    if ds_path.exists() and not force:
+        print(f"  DesignSpace already exists, skipping (use --force-designspace to regenerate).")
         return ds_path
 
     doc = DesignSpaceDocument()
@@ -948,9 +968,9 @@ def build_designspace(
         inst = InstanceDescriptor()
         inst.familyName = family_name
         inst.styleName  = weight_name
-        inst.name       = f"{family_name} {weight_name}"
+        inst.name       = f"{family_name}-{weight_name}"
         inst.location   = {"Weight": weight_map.get(weight_name, 400)}
-        inst.filename   = f"instances/{family_name.replace(' ', '')}-{weight_name}.ufo"
+        inst.filename   = f"instances/{family_dir.name}-{weight_name}.ufo"
         doc.addInstance(inst)
 
     doc.write(str(ds_path))
@@ -985,8 +1005,27 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
     parser.add_argument(
         "--weight",
-        default="Regular",
-        help="Weight name for the UFO master (default: Regular)",
+        default=None,
+        help=(
+            "Weight name for the UFO master (e.g. Regular, Light, Bold).  "
+            "If omitted and svg/ contains per-weight subdirectories, all of "
+            "them are built automatically (same as --all-weights)."
+        ),
+    )
+    parser.add_argument(
+        "--all-weights",
+        action="store_true",
+        help="Build UFO masters for every weight subdir found under svg/",
+    )
+    parser.add_argument(
+        "--no-designspace",
+        action="store_true",
+        help="Skip .designspace generation entirely",
+    )
+    parser.add_argument(
+        "--force-designspace",
+        action="store_true",
+        help="Overwrite the .designspace file even if it already exists",
     )
     parser.add_argument(
         "--dry-run",
@@ -1000,40 +1039,82 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"[ERROR] Family directory not found: {family_dir}", file=sys.stderr)
         return 1
 
-    print(f"\n[svg_to_ufo] Family: {family_dir.name}")
-    print(f"  Weight:  {args.weight}")
     if args.dry_run:
-        print("  Mode:    DRY RUN (no files will be written)\n")
+        print(f"\n[svg_to_ufo] Family: {family_dir.name}  (DRY RUN - no files written)\n")
+    else:
+        print(f"\n[svg_to_ufo] Family: {family_dir.name}\n")
 
     metrics = _load_metrics(family_dir)
     metrics.setdefault("family_name", family_dir.name)
 
-    try:
-        ufo_path = build_ufo(
-            family_dir=family_dir,
-            weight_name=args.weight,
-            metrics=metrics,
-            dry_run=args.dry_run,
-        )
-        build_designspace(
-            family_dir=family_dir,
-            ufo_paths={args.weight: ufo_path},
-            metrics=metrics,
-            dry_run=args.dry_run,
-        )
-    except FileNotFoundError as exc:
-        print(f"[ERROR] {exc}", file=sys.stderr)
-        return 1
-    except Exception as exc:
-        import traceback
-        print(f"[ERROR] Unexpected error: {exc}", file=sys.stderr)
-        traceback.print_exc()
-        return 1
+    # ------------------------------------------------------------------
+    # Resolve which weight(s) to build
+    # ------------------------------------------------------------------
+    KNOWN_WEIGHTS = {
+        "Thin", "ExtraLight", "Light", "Regular",
+        "Medium", "SemiBold", "Bold", "ExtraBold", "Black",
+    }
+
+    svg_base = family_dir / "svg"
+    # Detect per-weight subdirs (e.g. svg/Light/, svg/Regular/, svg/Bold/)
+    detected_weights: list[str] = sorted(
+        d.name for d in svg_base.iterdir()
+        if d.is_dir() and d.name in KNOWN_WEIGHTS
+    ) if svg_base.is_dir() else []
+
+    if args.weight:
+        weights_to_build = [args.weight]
+    elif args.all_weights or detected_weights:
+        weights_to_build = detected_weights or ["Regular"]
+    else:
+        weights_to_build = ["Regular"]
+
+    # ------------------------------------------------------------------
+    # Build each UFO master
+    # ------------------------------------------------------------------
+    built_ufos: dict[str, Path] = {}
+    errors = 0
+    for wname in weights_to_build:
+        print(f"  ── Weight: {wname}")
+        try:
+            ufo_path = build_ufo(
+                family_dir=family_dir,
+                weight_name=wname,
+                metrics=metrics,
+                dry_run=args.dry_run,
+            )
+            built_ufos[wname] = ufo_path
+        except FileNotFoundError as exc:
+            print(f"  [ERROR] {exc}", file=sys.stderr)
+            errors += 1
+        except Exception as exc:
+            import traceback
+            print(f"  [ERROR] Unexpected error building {wname}: {exc}", file=sys.stderr)
+            traceback.print_exc()
+            errors += 1
+
+    # ------------------------------------------------------------------
+    # Update .designspace (once, with all completed weights)
+    # ------------------------------------------------------------------
+    if built_ufos and not args.no_designspace:
+        try:
+            build_designspace(
+                family_dir=family_dir,
+                ufo_paths=built_ufos,
+                metrics=metrics,
+                dry_run=args.dry_run,
+                force=args.force_designspace,
+            )
+        except Exception as exc:
+            import traceback
+            print(f"  [ERROR] DesignSpace generation failed: {exc}", file=sys.stderr)
+            traceback.print_exc()
+            errors += 1
 
     if not args.dry_run:
         print("\n[svg_to_ufo] Done.\n")
 
-    return 0
+    return 0 if errors == 0 else 1
 
 
 if __name__ == "__main__":
