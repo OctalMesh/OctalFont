@@ -19,8 +19,9 @@ needed.
 
 **Load order** inside `octalfont`:
 
-```
-logging.sh -> common.sh -> dotenv.sh -> load_dotenv() -> env.sh -> ...
+```mermaid
+flowchart LR
+    A[logging.sh] --> B[common.sh] --> C[dotenv.sh] --> D[load_dotenv] --> E[env.sh] --> F[...]
 ```
 
 `load_dotenv` sources either `.env` (preferred) or `.env.example` (fallback)
@@ -49,14 +50,12 @@ exits with a fatal error before any build work begins.
 
 Settings are applied in this order, last writer wins:
 
-```
-common.sh    (path defaults)
-  ↓
-.env.example (project defaults - loaded when .env is absent)
-  ↓
-.env         (your local overrides)
-  ↓
-CLI flags    (--no-qa, --verbose, ... - override per invocation)
+```mermaid
+flowchart TD
+    A["common.sh<br/>path defaults"] --> B
+    B[".env.example<br/>project defaults - loaded when .env is absent"] --> C
+    C[".env<br/>your local overrides"] --> D
+    D["CLI flags<br/>--no-qa, --verbose, ... - override per invocation"]
 ```
 
 So a value set in `.env` always beats `.env.example`, and a CLI flag always
