@@ -23,12 +23,3 @@ families:
     name: OctalFont-Mercury
     status: frozen
     config: OctalFont-Mercury/config.yaml
-
-output:
-  # Root output directory relative to the repository root
-  dir: fonts
-
-logging:
-  dir: logs
-  # Log files older than this number of days will be deleted automatically
-  retention_days: 30
