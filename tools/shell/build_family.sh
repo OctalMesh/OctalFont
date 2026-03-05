@@ -90,10 +90,10 @@ function build_family() {
         if (( svg_count > 0 )); then
             info "[${fam_name}] Syncing UFO from ${svg_count} SVG file(s)..."
 
-            if ! "${PYTHON}" "${REPO_ROOT}/tools/python/svg_to_ufo.py" \
+            if ! "${PYTHON}" -m svg_to_ufo \
                     "${cfg_dir}" 2>&1 | tee -a "${build_log}"; then
 
-                error "[${fam_name}] svg_to_ufo.py failed."
+                error "[${fam_name}] svg_to_ufo failed."
                 error "[${fam_name}] See log: ${build_log}"
                 return 1
             fi
@@ -139,7 +139,7 @@ function build_family() {
         debug "[${fam_name}] Running production fixups..."
 
         # shellcheck disable=SC2086  # word-splitting is intentional here
-        "${PYTHON}" "${REPO_ROOT}/tools/python/fix_production.py" \
+        "${PYTHON}" -m fix_production \
             ${fix_targets} 2>&1 | tee -a "${build_log}" || true
     fi
 

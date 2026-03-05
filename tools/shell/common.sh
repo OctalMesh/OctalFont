@@ -26,6 +26,12 @@ export FONTS_DIR="${REPO_ROOT}/fonts"
 export LOG_DIR="${REPO_ROOT}/logs"
 export VENV_DIR="${REPO_ROOT}/venv"
 export PROJECT_CONFIG="${SOURCES_DIR}/config.yaml"
+export PYTHONTOOLS_DIR="${REPO_ROOT}/tools/python"
+
+# Prepend tools/python to PYTHONPATH so all packages under it (svg_to_ufo,
+# fix_production, ...) are importable via  python -m <module>.
+PYTHONPATH="${PYTHONTOOLS_DIR}${PYTHONPATH:+:${PYTHONPATH}}"
+export PYTHONPATH
 
 # Activate the virtual-environment Python if available; fall back to system.
 if [[ -f "${VENV_DIR}/bin/python" ]]; then
