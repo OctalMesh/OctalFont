@@ -61,12 +61,6 @@ declare -A _LOG_PRIORITIES=(
     [OFF]=5
 )
 
-# Detect if colors should be used
-_USE_COLOR=true
-if [[ ! -t 1 || -n "${NO_COLOR:-}" ]]; then
-    _USE_COLOR=false
-fi
-
 # ============================================================================ #
 #                                  Functions                                   #
 # ============================================================================ #
@@ -134,7 +128,7 @@ function _print() {
 
     local term_color="${color}"
     local term_reset="${RESET}"
-    if [[ "${_USE_COLOR}" == 'false' ]]; then
+    if [[ ! -t 1 || -n "${NO_COLOR:-}" ]]; then
         term_color=''
         term_reset=''
     fi

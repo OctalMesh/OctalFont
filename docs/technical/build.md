@@ -156,3 +156,4 @@ versions of the build tools, or after pulling changes to any `.in` file.
 - [Metrics](metrics.md)
 - [Axes](axes.md)
 - [Building the Font](build.md)
+- [Configuration](configuration.md)

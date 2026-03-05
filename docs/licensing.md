@@ -55,3 +55,4 @@ based on OctalFont and must use a different family name.
 - [Metrics](technical/metrics.md)
 - [Axes](technical/axes.md)
 - [Building the Font](technical/build.md)
+- [Configuration](technical/configuration.md)

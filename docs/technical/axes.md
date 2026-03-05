@@ -28,3 +28,4 @@ the planned additions.
 - [Metrics](metrics.md)
 - [Axes](axes.md)
 - [Building the Font](build.md)
+- [Configuration](configuration.md)

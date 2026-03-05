@@ -113,7 +113,7 @@ def build_ufo(
     ufo.info.openTypeNameLicenseURL = metrics.get("license_url", "")
     ufo.info.openTypeOS2VendorID = str(metrics.get("vendor_id", "NONE"))[:4].upper()
 
-    # fsType = 0 → Installable Embedding (required for OFL / MIT fonts)
+    # fsType = 0 -> Installable Embedding (required for OFL / MIT fonts)
     # An empty list encodes value 0 in ufoLib2
     ufo.info.openTypeOS2Type = []
 

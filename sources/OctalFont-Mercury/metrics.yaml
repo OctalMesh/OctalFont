@@ -70,7 +70,7 @@ x_height:   500    # Height of flat-top lowercase
 #                             SVG artboard reference                           #
 # ============================================================================ #
 
-svg_ref_size: 1000   # SVG viewBox height (and width — assumed square)
+svg_ref_size: 1000
 
 # ============================================================================ #
 #                                   Spacing                                    #

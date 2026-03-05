@@ -28,7 +28,11 @@ function cmd_build() {
         exit 1;
     }
 
-    export BUILD_NO_QA="${OPT_NO_QA}"
+    if [[ "${OPT_NO_QA}" == "1" ]]; then
+        export BUILD_NO_QA=1
+    else
+        export BUILD_NO_QA="${BUILD_NO_QA:-0}"
+    fi
 
     local families
     families="$(_get_families_to_process)"

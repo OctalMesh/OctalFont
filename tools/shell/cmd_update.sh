@@ -3,8 +3,8 @@
 # ============================================================================ #
 # Handler for the 'update' command.                                            #
 #                                                                              #
-# Recompiles ALL requirements lockfiles (main + test) with pip-compile and    #
-# synchronises the virtual environment with pip-sync.                         #
+# Recompiles ALL requirements lockfiles (main + test) with pip-compile and     #
+# synchronises the virtual environment with pip-sync.                          #
 #                                                                              #
 # Depends on:                                                                  #
 #   logging.sh, common.sh (REPO_ROOT, VENV_DIR), env.sh (env_activate).        #

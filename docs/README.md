@@ -5,14 +5,15 @@ Welcome to the **OctalFont** documentation.
 This resource covers the design principles, technical specifications, and build
 pipeline for the OctalFont typeface family. Use the sections below to navigate.
 
-| Section                                            | Description                                                |
-|----------------------------------------------------|------------------------------------------------------------|
-| [**Licensing**](licensing.md)                      | MIT (code) and OFL (fonts) dual-licensing explained        |
-| [**Design / Overview**](design/README.md)          | Design philosophy, geometric constraints, and visual goals |
-| [**Design / Sketches**](design/sketches/README.md) | The sketchbook-to-font design workflow                     |
-| [**Technical / Metrics**](technical/metrics.md)    | UPM, vertical metrics, and coordinate mapping              |
-| [**Technical / Axes**](technical/axes.md)          | Weight axis definition and variable-font roadmap           |
-| [**Technical / Build**](technical/build.md)        | How to set up the environment and compile the fonts        |
+| Section                                                     | Description                                                |
+|-------------------------------------------------------------|------------------------------------------------------------|
+| [**Licensing**](licensing.md)                               | MIT (code) and OFL (fonts) dual-licensing explained        |
+| [**Design / Overview**](design/README.md)                   | Design philosophy, geometric constraints, and visual goals |
+| [**Design / Sketches**](design/sketches/README.md)          | The sketchbook-to-font design workflow                     |
+| [**Technical / Metrics**](technical/metrics.md)             | UPM, vertical metrics, and coordinate mapping              |
+| [**Technical / Axes**](technical/axes.md)                   | Weight axis definition and variable-font roadmap           |
+| [**Technical / Build**](technical/build.md)                 | How to set up the environment and compile the fonts        |
+| [**Technical / Configuration**](technical/configuration.md) | The configuration system and how to customize builds       |
 
 > [!TIP]
 > GitHub automatically generates a navigable table of contents from the headings

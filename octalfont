@@ -43,7 +43,6 @@ set -euo pipefail
 # ============================================================================ #
 
 declare -rx OCTALFONT_VERSION="1.0.0"
-export LOG_LEVEL="INFO"
 
 # Define key directories relative to the script location
 
@@ -54,6 +53,8 @@ _TOOLS_DIR="${_ROOT_DIR}/tools/shell"
 
 source "${_TOOLS_DIR}/logging.sh"
 source "${_TOOLS_DIR}/common.sh"
+source "${_TOOLS_DIR}/dotenv.sh"
+load_dotenv "${_ROOT_DIR}"
 source "${_TOOLS_DIR}/env.sh"
 source "${_TOOLS_DIR}/build_family.sh"
 source "${_TOOLS_DIR}/cli.sh"

@@ -66,3 +66,4 @@ the appropriate UFO master under `sources/<Family>/ufo/`.
 - [Metrics](../../technical/metrics.md)
 - [Axes](../../technical/axes.md)
 - [Building the Font](../../technical/build.md)
+- [Configuration](../../technical/configuration.md)
