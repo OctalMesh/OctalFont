@@ -1,5 +1,5 @@
 fontmake>=3.9.0
-gftools[qa]>=0.9.54
+gftools[qa]>=0.9.994
 fontbakery[googlefonts]>=0.9.2
 ufoLib2>=0.17.0
 pyyaml>=6.0
