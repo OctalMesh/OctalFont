@@ -8,9 +8,9 @@
   <br />
   <a rel="noopener noreferrer" href="https://github.com/OctalMesh/OctalFont">
     <picture>
-      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/OctalMesh/OctalDesign/release/assets/platform/font/svg/octalfont.svg">
-      <source media="(max-width: 480px)" srcset="https://raw.githubusercontent.com/OctalMesh/OctalDesign/release/assets/platform/font/svg/octal_font_center_white.svg">
-      <img alt="OctalFont" src="https://raw.githubusercontent.com/OctalMesh/OctalDesign/release/assets/platform/font/svg/octalfont_white.svg">
+      <source media="(prefers-color-scheme: light)" srcset="./assets/logo/svg/octalfont.svg">
+      <source media="(max-width: 480px)" srcset="./assets/logo/svg/octal_font_center_white.svg">
+      <img alt="OctalFont" src="./assets/logo/svg/octalfont_white.svg">
     </picture>
   </a>
   <br /><br /><br />
