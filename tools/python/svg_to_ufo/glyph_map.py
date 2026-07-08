@@ -9,16 +9,16 @@ import unicodedata
 # below covers numerals, punctuation, and names that don't equal the char.
 FILENAME_MAP: dict[str, tuple[str, int]] = {
     # <editor-fold desc="Numerals" defaultstate="collapsed">
-    "0": ("zero",  0x0030),
-    "1": ("one",   0x0031),
-    "2": ("two",   0x0032),
-    "3": ("three", 0x0033),
-    "4": ("four",  0x0034),
-    "5": ("five",  0x0035),
-    "6": ("six",   0x0036),
-    "7": ("seven", 0x0037),
-    "8": ("eight", 0x0038),
-    "9": ("nine",  0x0039),
+    "zero":  ("zero",  0x0030),
+    "one":   ("one",   0x0031),
+    "two":   ("two",   0x0032),
+    "three": ("three", 0x0033),
+    "four":  ("four",  0x0034),
+    "five":  ("five",  0x0035),
+    "six":   ("six",   0x0036),
+    "seven": ("seven", 0x0037),
+    "eight": ("eight", 0x0038),
+    "nine":  ("nine",  0x0039),
     # </editor-fold>
     # <editor-fold desc="Punctuation" defaultstate="collapsed">
     "period":       ("period",       0x002E),
