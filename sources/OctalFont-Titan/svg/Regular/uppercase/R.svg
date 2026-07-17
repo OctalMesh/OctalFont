@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <style>
+    :root { color-scheme: light dark; }
+    svg * { fill: #111111; }
+    @media (prefers-color-scheme: dark) {
+      svg * { fill: #f5f5f5; }
+    }
+  </style>
   <path d="M1000,212.915L787.085,0H0v1000h200v-400h504.615l95.385,100v300h200v-387.085l-112.974-112.915,112.974-112.915v-174.17ZM200,400v-200h504.615l95.385,100-95.385,100H200Z" />
 </svg>
