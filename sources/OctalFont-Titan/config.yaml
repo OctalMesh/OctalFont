@@ -17,7 +17,7 @@ outputDir: "../../fonts/OctalFont-Titan"
 #                                Build targets                                 #
 # ============================================================================ #
 
-buildVariable: true   # Build variable font (requires >=2 masters)
+buildVariable: false  # Build variable font (requires >=2 masters)
 buildTTF: true        # Build static TrueType instances
 buildOTF: true        # Build static OpenType (CFF) instances
 buildWebfont: true    # Build WOFF2 web fonts
