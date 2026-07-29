@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <style>
+    :root { color-scheme: light dark; }
+    svg * { fill: #000; }
+    @media (prefers-color-scheme: dark) { svg * { fill: #fff; } }
+  </style>
+  <polygon points="600.711 381.423 600.711 200 800.711 200 800.711 0 400.711 0 400.711 298.578 199.289 499.999 400.711 701.421 400.711 1000 800.711 1000 800.711 800 600.711 800 600.711 618.578 482.133 500 600.711 381.423"/>
+</svg>
