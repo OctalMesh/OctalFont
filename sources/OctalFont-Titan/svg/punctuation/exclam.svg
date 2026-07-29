@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <style>
+    :root { color-scheme: light dark; }
+    svg * { fill: #000; }
+    @media (prefers-color-scheme: dark) { svg * { fill: #fff; } }
+  </style>
+  <rect x="400" y="800" width="200" height="200"/>
+  <polygon points="600 0 400 0 400 700 600 700 600 600 600 0"/>
+</svg>
