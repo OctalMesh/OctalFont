@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="three" format="2">
+  <advance width="850"/>
+  <unicode hex="0033"/>
+  <outline>
+    <contour>
+      <point x="568.23" y="560.0" type="line"/>
+      <point x="282.2" y="560.0" type="line"/>
+      <point x="173.7" y="452.2" type="line"/>
+      <point x="75.0" y="550.9" type="line"/>
+      <point x="224.1" y="700.0" type="line"/>
+      <point x="625.959" y="700.0" type="line"/>
+      <point x="775.0" y="550.96" type="line"/>
+      <point x="775.0" y="429.034" type="line"/>
+      <point x="695.903" y="350.015" type="line"/>
+      <point x="775.0" y="270.96" type="line"/>
+      <point x="775.0" y="149.041" type="line"/>
+      <point x="625.959" y="0.0" type="line"/>
+      <point x="224.1" y="0.0" type="line"/>
+      <point x="75.0" y="149.1" type="line"/>
+      <point x="173.7" y="247.8" type="line"/>
+      <point x="282.2" y="140.0" type="line"/>
+      <point x="568.23" y="140.0" type="line"/>
+      <point x="635.0" y="209.999" type="line"/>
+      <point x="568.23" y="280.0" type="line"/>
+      <point x="355.0" y="280.0" type="line"/>
+      <point x="355.0" y="420.0" type="line"/>
+      <point x="568.23" y="420.0" type="line"/>
+      <point x="635.0" y="490.015" type="line"/>
+    </contour>
+  </outline>
+</glyph>

@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<designspace format="5.0">
+  <axes>
+    <axis tag="wght" name="Weight" minimum="300" default="400" maximum="700"/>
+  </axes>
+  <sources>
+    <source filename="ufo/Light.ufo" familyname="OctalFont Mercury" stylename="Light">
+      <location>
+        <dimension name="Weight" xvalue="300"/>
+      </location>
+    </source>
+    <source filename="ufo/Regular.ufo" familyname="OctalFont Mercury" stylename="Regular">
+      <info copy="1"/>
+      <location>
+        <dimension name="Weight" xvalue="400"/>
+      </location>
+    </source>
+    <source filename="ufo/Bold.ufo" familyname="OctalFont Mercury" stylename="Bold">
+      <location>
+        <dimension name="Weight" xvalue="700"/>
+      </location>
+    </source>
+  </sources>
+  <instances>
+    <instance name="OctalFont Mercury Light"   familyname="OctalFont Mercury" stylename="Light"   filename="instances/OctalFont-Mercury-Light.ufo">
+      <location>
+        <dimension name="Weight" xvalue="300"/>
+      </location>
+    </instance>
+    <instance name="OctalFont Mercury Regular" familyname="OctalFont Mercury" stylename="Regular" filename="instances/OctalFont-Mercury-Regular.ufo">
+      <location>
+        <dimension name="Weight" xvalue="400"/>
+      </location>
+    </instance>
+    <instance name="OctalFont Mercury Bold"    familyname="OctalFont Mercury" stylename="Bold"    filename="instances/OctalFont-Mercury-Bold.ufo">
+      <location>
+        <dimension name="Weight" xvalue="700"/>
+      </location>
+    </instance>
+  </instances>
+</designspace>

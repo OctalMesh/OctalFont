@@ -1,0 +1,37 @@
+# ============================================================================ #
+#                                   Sources                                    #
+# ============================================================================ #
+
+sources:
+  - OctalFont-Cuprum.designspace
+
+familyName: OctalFont Cuprum
+
+# ============================================================================ #
+#                                    Output                                    #
+# ============================================================================ #
+
+outputDir: "../../fonts/OctalFont-Cuprum"
+
+# ============================================================================ #
+#                                Build targets                                 #
+# ============================================================================ #
+
+buildVariable: true   # Build variable font (requires >=2 masters)
+buildTTF: true        # Build static TrueType instances
+buildOTF: true        # Build static OpenType (CFF) instances
+buildWebfont: true    # Build WOFF2 web fonts
+
+# ============================================================================ #
+#                              Post-processing                                 #
+# ============================================================================ #
+
+autohintTTF: true          # Run ttfautohint on static TTF outputs
+checkCompatibility: true   # Verify master compatibility before building
+
+# ============================================================================ #
+#                             Quality & cleanup                                #
+# ============================================================================ #
+
+logLevel: WARNING
+cleanUp: true   # Remove intermediate temp files after a successful build

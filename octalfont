@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+
+# ============================================================================ #
+# OctalFont CLI Tool                                                           #
+# Version: 1.0.0                                                               #
+#                                                                              #
+# Description:                                                                 #
+#   A unified interface for managing the OctalFont development environment.    #
+#   Handles virtual environment creation, dependency resolution (pip-tools),   #
+#   font compilation (fontmake), and automated testing.                        #
+#                                                                              #
+# Usage:                                                                       #
+#   ./octalfont <command> [options]                                            #
+#                                                                              #
+# Commands:                                                                    #
+#   build   Build one or more font families with gftools builder               #
+#   test    Run fontbakery QA checks on built fonts                            #
+#   proof   Generate HTML proof documents via diffenator2                      #
+#   clean   Remove build artifacts (fonts/ outputs and temp files)             #
+#   env     Check or set up the Python virtual environment                     #
+#   update  Re-compile requirements lockfiles with pip-tools                   #
+#   help    Show this help message                                             #
+#                                                                              #
+# Options (build / test / proof / clean):                                      #
+#   --family=<id>    Target a single family  [titan | cuprum | mercury]        #
+#   --all            Target all families regardless of their 'status' flag     #
+#   --no-qa          Skip fontbakery QA after building                         #
+#   --verbose        Enable DEBUG-level log output                             #
+#                                                                              #
+# Options (clean):                                                             #
+#   --deep           Full reset: also removes out/ (QA reports), logs/,        #
+#                    and Python caches (__pycache__, .pytest_cache, .pyc).     #
+#                                                                              #
+# Options (env):                                                               #
+#   --setup          Create the venv, compile lock files, install all deps     #
+#   --check          Verify tools only (default)                               #
+# ============================================================================ #
+
+set -euo pipefail
+
+# ============================================================================ #
+#                                  Variables                                   #
+# ============================================================================ #
+
+declare -rx OCTALFONT_VERSION="1.0.0"
+
+# Define key directories relative to the script location
+
+_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_TOOLS_DIR="${_ROOT_DIR}/tools/shell"
+
+# Source shared tools
+
+source "${_TOOLS_DIR}/logging.sh"
+source "${_TOOLS_DIR}/common.sh"
+source "${_TOOLS_DIR}/dotenv.sh"
+load_dotenv "${_ROOT_DIR}"
+source "${_TOOLS_DIR}/env.sh"
+source "${_TOOLS_DIR}/build_family.sh"
+source "${_TOOLS_DIR}/cli.sh"
+source "${_TOOLS_DIR}/cmd_build.sh"
+source "${_TOOLS_DIR}/cmd_test.sh"
+source "${_TOOLS_DIR}/cmd_proof.sh"
+source "${_TOOLS_DIR}/cmd_clean.sh"
+source "${_TOOLS_DIR}/cmd_update.sh"
+
+# CLI defaults
+
+export CMD=""
+export OPT_FAMILY=""
+export OPT_ALL=0
+export OPT_NO_QA=0
+export OPT_VERBOSE=0
+export OPT_ENV_SETUP=0
+export OPT_CLEAN_DEEP=0
+
+# Python UTF-8 (avoids cp1251/cp866 encode errors when piped via tee)
+
+export PYTHONUTF8=1
+export PYTHONIOENCODING=utf-8
+
+# ============================================================================ #
+#                                  Functions                                   #
+# ============================================================================ #
+
+# The main entry point for the CLI tool. Parses arguments, sets up logging, and
+# dispatches to the appropriate command handler.
+function main() {
+    _parse_args "$@"
+
+    # Each invocation gets its own timestamped log subdirectory:
+    #   logs/YYYY-MM-DD_HH-MM-SS-<cmd>/
+    #     session.log - full stdout/stderr transcript
+    #     build-*.log - per-family gftools output
+    #     qa-*.log    - per-family FontBakery output
+    local _run_ts
+    _run_ts="$(date +%Y-%m-%d_%H-%M-%S)"
+
+    export SESSION_LOG_DIR="${LOG_DIR}/${_run_ts}-${CMD:-session}"
+    export BUILD_LOG_DIR="${SESSION_LOG_DIR}"
+
+    start_session_logging
+
+    # Each command is implemented in its own sourced script (cmd_*.sh) for
+    # modularity and maintainability.
+    case "${CMD}" in
+        build)   cmd_build  ;;
+        test)    cmd_test   ;;
+        proof)   cmd_proof  ;;
+        clean)   cmd_clean  ;;
+        env)     cmd_env    ;;
+        update)  cmd_update ;;
+        help|"") _usage     ;;
+        *)
+            error "Unknown command: '${CMD}'"
+            _usage
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"

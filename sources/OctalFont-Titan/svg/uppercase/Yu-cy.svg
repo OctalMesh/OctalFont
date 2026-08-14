@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <style>
+    :root { color-scheme: light dark; }
+    svg * { fill: #000; }
+    @media (prefers-color-scheme: dark) { svg * { fill: #fff; } }
+  </style>
+  <path d="M800,0h-200l-200,200v200h-200V0H0v1000h200v-400h200v200l200,200h200l200-200V200L800,0ZM800,717.073l-82.927,82.927h-34.388l-82.685-82.685v-434.629l82.685-82.685h34.388l82.927,82.927v434.147Z"/>
+</svg>

@@ -1,0 +1,112 @@
+# ============================================================================ #
+#                            Build / Dist / Output                             #
+# ============================================================================ #
+
+build/
+builds/
+dist/
+out/
+fonts/
+*.egg-info/
+.eggs/
+logs/
+
+# ============================================================================ #
+#                              Environment / Misc                              #
+# ============================================================================ #
+
+.env
+*~
+.directory
+*.pem
+
+# ============================================================================ #
+#                                 IDE / Editor                                 #
+# ============================================================================ #
+
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# ============================================================================ #
+#                                 OS-specific                                  #
+# ============================================================================ #
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+.Trash-*
+.fuse_hidden*
+.nfs*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ============================================================================ #
+#                               Python-specific                                #
+# ============================================================================ #
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.pyc
+
+# Requirements txt files
+requirements.txt
+requirements-test.txt
+
+# Virtual Environments
+venv/
+env/
+.venv/
+.env/
+
+# pip-tools
+*.txt~
+
+# pytest
+.cache/
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# coverage
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover

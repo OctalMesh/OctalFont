@@ -5,45 +5,98 @@
 *.xml        text eol=lf encoding=UTF-8
 *.properties text eol=lf encoding=UTF-8
 *.json       text eol=lf encoding=UTF-8
+*.toml       text eol=lf encoding=UTF-8
 *.yml        text eol=lf encoding=UTF-8
 *.yaml       text eol=lf encoding=UTF-8
 *.md         text eol=lf encoding=UTF-8
+*.mdx        text eol=lf encoding=UTF-8
 *.txt        text eol=lf encoding=UTF-8
+
+# Python
+*.py  text eol=lf encoding=UTF-8
+*.pyi text eol=lf encoding=UTF-8
 
 # Font source files
 *.glyphs text eol=lf encoding=UTF-8
-*.ufo    text eol=lf encoding=UTF-8
+*.glif   text eol=lf encoding=UTF-8
+*.plist  text eol=lf encoding=UTF-8
 *.sfd    text eol=lf encoding=UTF-8
+*.ufo    text eol=lf encoding=UTF-8
 
-# Font binaries
-*.ttf    binary
-*.otf    binary
-*.woff   binary
-*.woff2  binary
-*.eot    binary
+# Font files
+*.eot   binary
+*.otf   binary
+*.ttf   binary
+*.woff  binary
+*.woff2 binary
+
+# Shell scripts
+*.bash text eol=lf
+*.fish text eol=lf
+*.ksh  text eol=lf
+*.sh   text eol=lf
+*.zsh  text eol=lf
 
 # Windows batch scripts
 *.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
 
-# Binary files
-*.war    binary
-*.ear    binary
-*.zip    binary
-*.tar.gz binary
-*.rar    binary
+# Packaged files
+*.7z    binary
+*.bz    binary
+*.bz2   binary
+*.bzip2 binary
+*.ear   binary
+*.gz    binary
+*.lz    binary
+*.lzma  binary
+*.rar   binary
+*.tar   binary
+*.taz   binary
+*.tbz   binary
+*.tbz2  binary
+*.tgz   binary
+*.tlz   binary
+*.txz   binary
+*.war   binary
+*.xz    binary
+*.Z     binary
+*.zip   binary
+*.zst   binary
 
 # Image files
 *.png  binary
 *.jpg  binary
 *.jpeg binary
-*.gif  binary
 *.webp binary
+*.gif  binary
+*.tif  binary
+*.tiff binary
+*.ico  binary
+*.eps  binary
+*.svg  text
+
+# Design files
+*.ai  binary
+*.psd binary
 
 # Video files
 *.webm binary
 *.mp4  binary
 *.avi  binary
+*.mov  binary
+*.mkv  binary
 
 # Audio files
-*.mp3 binary
-*.wav binary
+*.mp3  binary
+*.wav  binary
+*.flac binary
+*.ogg  binary
+
+# Excluded files from git archive exports
+.editorconfig  export-ignore
+.gitattributes export-ignore
+.gitignore     export-ignore
+.gitkeep       export-ignore
+.gitmodules    export-ignore
