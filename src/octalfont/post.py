@@ -10,9 +10,9 @@ from fontTools.ttLib import TTFont, newTable
 def add_meta(path: Path, scripts: list[str]) -> None:
     """Add the ``meta`` table with design/supported language tags (``dlng``/``slng``)."""
 
-    font = TTFont(path)
-    meta = newTable("meta")
-    meta.data = {"dlng": ", ".join(scripts), "slng": ", ".join(scripts)}
-    font["meta"] = meta
+    with TTFont(path) as font:
+        meta = newTable("meta")
+        meta.data = {"dlng": ", ".join(scripts), "slng": ", ".join(scripts)}
+        font["meta"] = meta
 
-    font.save(path)
+        font.save(path)

@@ -165,19 +165,19 @@ class Face:
 
 
 def read_face(path: Path) -> Face:
-    font = TTFont(path, lazy=True, recalcTimestamp=False)
-    italic = bool(font["OS/2"].fsSelection & 1) or bool(font["head"].macStyle & 2)
+    with TTFont(path, lazy=True, recalcTimestamp=False) as font:
+        italic = bool(font["OS/2"].fsSelection & 1) or bool(font["head"].macStyle & 2)
 
-    if "fvar" in font:
-        axes = {a.axisTag: a for a in font["fvar"].axes}
-        w = axes.get("wght")
-        weight = (round(w.minValue), round(w.maxValue)) if w else (font["OS/2"].usWeightClass,) * 2
-        d = axes.get("wdth")
-        stretch = (round(d.minValue), round(d.maxValue)) if d else None
+        if "fvar" in font:
+            axes = {a.axisTag: a for a in font["fvar"].axes}
+            w = axes.get("wght")
+            weight = (round(w.minValue), round(w.maxValue)) if w else (font["OS/2"].usWeightClass,) * 2
+            d = axes.get("wdth")
+            stretch = (round(d.minValue), round(d.maxValue)) if d else None
 
-        return Face(path, weight, italic, True, stretch)
+            return Face(path, weight, italic, True, stretch)
 
-    return Face(path, (font["OS/2"].usWeightClass,) * 2, italic, False)
+        return Face(path, (font["OS/2"].usWeightClass,) * 2, italic, False)
 
 
 def find_faces(cfg: FontConfig) -> list[Face]:
@@ -198,7 +198,8 @@ def find_faces(cfg: FontConfig) -> list[Face]:
 
 
 def cmap_of(path: Path) -> set[int]:
-    return set(TTFont(path, lazy=True)["cmap"].getBestCmap())
+    with TTFont(path, lazy=True) as font:
+        return set(font["cmap"].getBestCmap())
 
 
 def write_woff2(src: Path, dst: Path, codepoints: set[int]) -> None:
@@ -209,16 +210,17 @@ def write_woff2(src: Path, dst: Path, codepoints: set[int]) -> None:
     options.hinting = True
     options.glyph_names = False
     options.flavor = "woff2"
-    font = TTFont(src, recalcTimestamp=False)
-    subsetter = subset.Subsetter(options)
 
-    subsetter.populate(unicodes=sorted(codepoints))
-    subsetter.subset(font)
+    with TTFont(src, recalcTimestamp=False) as font:
+        subsetter = subset.Subsetter(options)
 
-    font.flavor = "woff2"
+        subsetter.populate(unicodes=sorted(codepoints))
+        subsetter.subset(font)
 
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    font.save(dst)
+        font.flavor = "woff2"
+
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        font.save(dst)
 
 
 # ============================================================================ #

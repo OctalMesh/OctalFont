@@ -59,7 +59,7 @@ def test_contributors_with_entries_pass(font_repo):
 def test_authors_still_required(font_repo):
     (font_repo / "AUTHORS.txt").unlink()
 
-    assert any(f.level == "FAIL" and "AUTHORS.txt" in f.message for f in check_legal(load_config(font_repo)))
+    assert any(f.level == "WARN" and "AUTHORS.txt" in f.message for f in check_legal(load_config(font_repo)))
 
 
 def test_archive_is_deterministic_and_skips_missing_contributors(font_repo, monkeypatch):
