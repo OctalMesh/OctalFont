@@ -66,7 +66,10 @@ infrastructure) may be considered if they:
 Please ensure that:
 
 - The project builds successfully
-- Tests pass
+- Tests pass (`pytest`) and `ruff check .` is clean
+- A **changeset** is included: run `octalfont release add` (or
+  `octalfont release add --empty` for docs, CI and test-only changes). Do not
+  edit versions or `CHANGELOG.md` by hand, see [RELEASING.md](RELEASING.md)
 - Changes are focused and not overly broad
 - Related issues are referenced where relevant
 
@@ -92,8 +95,10 @@ consistency.
 
 ## Licensing
 
-- Font files are licensed under the [SIL Open Font License (OFL)](LICENSE-OFL.md)
-- Source code, scripts, and tooling are licensed under the [MIT License](LICENSE-MIT.md)
+- Font files are licensed under the SIL Open Font License (OFL), in each font
+  repository
+- Source code, scripts, and tooling in this repository are licensed under the
+  [MIT License](LICENSE.md)
 
 By contributing, you agree that your contribution will be licensed under the
 same license applicable to the part of the project you are contributing to.
