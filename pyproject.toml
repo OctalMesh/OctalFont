@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "octalfont"
+version = "0.0.0"
+description = "Shared build tooling for the Octal font families"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE.md"]
+requires-python = ">=3.10"
+authors = [
+  { name = "Nykon Hrytsyshyn", email = "contact@nykon.me" },
+  { name = "OctalMesh", email = "contact@octalmesh.com" },
+]
+dependencies = [
+  "fonttools[ufo]>=4.50",
+  "ufoLib2>=0.17",
+  "pyyaml>=6.0",
+  "glyphsLib>=6.6",
+]
+
+[project.optional-dependencies]
+build = ["fontmake>=3.9", "gftools[qa]>=0.9.90", "brotli>=1.1"]
+test = ["pytest>=8", "brotli>=1.1"]
+lint = ["ruff>=0.6"]
+
+[project.scripts]
+octalfont = "octalfont.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/OctalMesh/OctalFont"
+Repository = "https://github.com/OctalMesh/OctalFont"
+Issues = "https://github.com/OctalMesh/OctalFont/issues"
+Changelog = "https://github.com/OctalMesh/OctalFont/blob/release/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/octalfont"]
+include = ["src/octalfont/data/**"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/README.md", "/LICENSE.md", "/CHANGELOG.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "B", "I"]
