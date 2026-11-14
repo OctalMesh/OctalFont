@@ -1,0 +1,135 @@
+# ============================================================================ #
+#                         Reusable: Font CI Workflow                           #
+# ============================================================================ #
+# The build pipeline every font repository runs on pushes and pull requests:   #
+#  1. regenerate the derived sources and fail if they differ from the commit   #
+#  2. `octalfont check` - legal files, vertical metrics, glyph-set coverage    #
+#  3. `octalfont build` - gftools builder + meta table                         #
+#  4. Font Bakery (Google Fonts profile)                                       #
+#  5. changeset check (pull requests into dev only)                            #
+#                                                                              #
+# The tool version comes from the font repository's own requirements.txt.      #
+#                                                                              #
+# Skip tags (anywhere in commit message or PR title):                          #
+#   [ci-skip]    - skips all workflows                                         #
+#   [build-skip] - skips this workflow only                                    #
+# ============================================================================ #
+
+name: "Reusable: Font CI"
+
+on:
+  workflow_call:
+    inputs:
+      base-branch:
+        type: string
+        default: "dev"
+
+      python-version:
+        type: string
+        default: "3.12"
+
+      fontbakery-blocking:
+        description: "Fail the workflow on Font Bakery findings (enable once the family is feature-complete)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: "read"
+
+jobs:
+  # Check if the commit message / PR title contains skip tags
+  check:
+    name: "Skip Check"
+    runs-on: "ubuntu-latest"
+    outputs:
+      should_skip: ${{ steps.belay.outputs.issued }}
+
+    steps:
+      - name: "Run: Check skip tags"
+        id: "belay"
+        uses: OctalMesh/belay-action@v1
+        with:
+          signal_tags: "[ci-skip],[build-skip]"
+
+  build:
+    name: "Build"
+    needs: "check"
+    if: needs.check.outputs.should_skip != 'true'
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 30
+
+    steps:
+      - name: "Setup: Checkout repository"
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: "Setup: Python"
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: "Setup: Install dependencies"
+        run: "pip install -r requirements.txt"
+
+      - name: "Run: Generate sources and verify they are committed"
+        run: |
+          octalfont sources
+          if [ -n "$(git status --porcelain -- sources/)" ]; then
+            git status --short -- sources/
+            echo "::error::Generated sources are stale. Run 'octalfont sources' and commit the result."
+            exit 1
+          fi
+
+      - name: "Run: Check Google Fonts requirements"
+        run: "octalfont check"
+
+      - name: "Run: Build fonts"
+        env:
+          SOURCE_DATE_EPOCH: "0"
+        run: "octalfont build"
+
+      - name: "Run: Font Bakery"
+        continue-on-error: ${{ !inputs.fontbakery-blocking }}
+        run: 'fontbakery check-googlefonts --skip-network -l WARN $(find fonts -name "*.ttf" | sort)'
+
+      - name: "Run: Upload fonts"
+        uses: actions/upload-artifact@v7
+        with:
+          name: "fonts"
+          path: "fonts/"
+
+  changeset:
+    name: "Changeset"
+    needs: "check"
+    if: >-
+      needs.check.outputs.should_skip != 'true' &&
+      github.event_name == 'pull_request' &&
+      github.base_ref == inputs.base-branch &&
+      github.actor != 'dependabot[bot]'
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+
+    steps:
+      - name: "Setup: Checkout repository"
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: "Setup: Python"
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: "Setup: Install dependencies"
+        run: "pip install -r requirements.txt"
+
+      - name: "Run: Require a changeset for release-relevant changes"
+        env:
+          BASE: ${{ inputs.base-branch }}
+        run: 'octalfont release check --base "origin/$BASE" --github'

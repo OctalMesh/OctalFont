@@ -1,0 +1,67 @@
+# ============================================================================ #
+#                        Dependabot Configuration File                         #
+# ============================================================================ #
+# This file defines the Dependabot configuration for this project. It keeps    #
+# Python dependencies and GitHub Actions up to date by opening pull requests   #
+# on a weekly schedule. Dependabot pull requests need no changeset.            #
+#                                                                              #
+# See: https://dependabot.com                                                  #
+# ============================================================================ #
+
+version: 2
+
+updates:
+  # Keep Python dependencies from pyproject.toml up to date
+  - package-ecosystem: "pip"
+    directory: "/"
+    target-branch: "dev"
+    open-pull-requests-limit: 5
+
+    # Runs every Monday at 6:00 AM UTC
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+
+    labels:
+      - "Dependencies"
+
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+    groups:
+      # Font tooling moves together
+      font-tooling:
+        patterns:
+          - "fonttools*"
+          - "ufo*"
+          - "glyphslib"
+          - "gftools*"
+          - "fontmake"
+          - "fontbakery"
+
+      # Test and lint tools
+      dev-tools:
+        patterns:
+          - "pytest*"
+          - "ruff"
+
+  # Keep GitHub Actions (and reusable workflow refs) up to date
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "dev"
+    open-pull-requests-limit: 5
+
+    # Runs every Monday at 6:00 AM UTC
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+
+    labels:
+      - "Dependencies"
+
+    commit-message:
+      prefix: "chore"
+      include: "scope"

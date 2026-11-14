@@ -1,0 +1,30 @@
+# ============================================================================ #
+#                        Generated Release Notes Config                        #
+# ============================================================================ #
+# Groups the notes that "Releasing: Post-Release" generates for the draft      #
+# GitHub Release, by the labels of the pull requests merged since the          #
+# previous tag.                                                                #
+# ============================================================================ #
+
+changelog:
+  exclude:
+    labels:
+      - "Release"
+
+  categories:
+    - title: "New features"
+      labels:
+        - "Suggestion"
+        - "Feature"
+
+    - title: "Bug fixes"
+      labels:
+        - "Bug"
+
+    - title: "Dependencies"
+      labels:
+        - "Dependencies"
+
+    - title: "Other changes"
+      labels:
+        - "*"

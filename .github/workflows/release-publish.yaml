@@ -1,0 +1,120 @@
+# ============================================================================ #
+#                               Publish Workflow                               #
+# ============================================================================ #
+# Runs when a GitHub Release is published - the one deliberate, human click on #
+# the draft that release-post.yaml prepared. It rebuilds the package from the  #
+# release tag, tests it, attests the artifacts and attaches the wheel and      #
+# sdist to the Release.                                                        #
+#                                                                              #
+# Font repositories install the tool straight from the tag:                    #
+#   octalfont[build] @ git+https://github.com/OctalMesh/OctalFont@vX.Y.Z       #
+# GitHub Packages has no Python registry, so GitHub Releases is the            #
+# distribution point. Publishing to PyPI is opt-in: set the repository         #
+# variable PUBLISH_PYPI=true and enable trusted publishing for the project     #
+# (environment "pypi").                                                        #
+#                                                                              #
+# See: RELEASING.md - for more details on the release process.                 #
+# ============================================================================ #
+
+name: "Releasing: Publish"
+
+on:
+  release:
+    types: ["published"]
+
+permissions:
+  contents: "read"
+
+jobs:
+  build:
+    name: "Build & Attach"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 20
+
+    permissions:
+      contents: "write"
+      id-token: "write"
+      attestations: "write"
+
+    steps:
+      - name: "Setup: Checkout repository"
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: "Setup: Python"
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: "pyproject.toml"
+
+      - name: "Setup: Install dependencies"
+        run: 'pip install -e ".[test]" build twine'
+
+      - name: "Run: Verify release tag matches package version"
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION=$(octalfont release current)
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "::error::Release tag '$TAG' does not match the version in pyproject.toml ('v$VERSION')."
+            echo "::error::Make sure release-post.yaml tagged the right commit."
+            exit 1
+          fi
+
+      - name: "Run: Test suite"
+        run: "pytest -q"
+
+      - name: "Run: Build sdist and wheel"
+        run: |
+          python -m build
+          twine check --strict dist/*
+
+      - name: "Run: Smoke test the wheel"
+        run: |
+          python -m venv /tmp/smoke
+          /tmp/smoke/bin/pip install dist/*.whl
+          /tmp/smoke/bin/octalfont --version
+          /tmp/smoke/bin/octalfont release --help >/dev/null
+
+      - name: "Run: Attest build provenance"
+        uses: actions/attest@v4
+        with:
+          subject-path: "dist/*"
+
+      - name: "Run: Attach to the release"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: 'gh release upload "$TAG" dist/* --clobber'
+
+      - name: "Run: Keep dist for the PyPI job"
+        uses: actions/upload-artifact@v7
+        with:
+          name: "dist"
+          path: "dist/"
+
+  pypi:
+    name: "Publish to PyPI"
+    needs: "build"
+    if: vars.PUBLISH_PYPI == 'true'
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+
+    environment:
+      name: "pypi"
+      url: "https://pypi.org/p/octalfont"
+
+    permissions:
+      id-token: "write"
+
+    steps:
+      - name: "Setup: Download dist"
+        uses: actions/download-artifact@v8
+        with:
+          name: "dist"
+          path: "dist/"
+
+      - name: "Run: Publish to PyPI (trusted publishing)"
+        uses: pypa/gh-action-pypi-publish@release/v1

@@ -6,7 +6,7 @@
 #                                                                              #
 # Team Assignments:                                                            #
 # - @OctalMesh/core:        Policies, contribution guidelines, and licensing   #
-# - @OctalMesh/atelier:     Design assets, documentation, and font sources     #
+# - @OctalMesh/atelier:     Design assets and documentation                    #
 # - @OctalMesh/development: Codebase, tooling, and GitHub configuration        #
 # ============================================================================ #
 
@@ -20,16 +20,16 @@
 /docs/    @OctalMesh/atelier @OctalMesh/development
 README.md @OctalMesh/atelier @OctalMesh/development
 
-# Font sources and design assets
-/sources/ @OctalMesh/atelier
+# Design assets
+/assets/ @OctalMesh/atelier
 
-# Tests and tooling
+# Tooling, tests and release automation
+/src/             @OctalMesh/development
 /tests/           @OctalMesh/development
-/tools/           @OctalMesh/development
-octalfont         @OctalMesh/development
-octalfont.bat     @OctalMesh/development
-requirements*.txt @OctalMesh/development
-requirements*.in  @OctalMesh/development
+/.changeset/      @OctalMesh/development
+pyproject.toml    @OctalMesh/development
+RELEASING.md      @OctalMesh/development
+CHANGELOG.md      @OctalMesh/development
 
 # Policies, contribution, and licensing
 CODE_OF_CONDUCT*.md @OctalMesh/core

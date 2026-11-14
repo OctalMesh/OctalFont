@@ -1,0 +1,107 @@
+# ============================================================================ #
+#                               Quality Workflow                               #
+# ============================================================================ #
+# Runs Ruff on every push to dev and release, and on every pull request        #
+# targeting either branch. Pull requests into dev must also carry a changeset  #
+# when they touch the package (`octalfont release check`).                     #
+#                                                                              #
+# Skip tags (anywhere in commit message or PR title):                          #
+#   [ci-skip]      - skips all workflows                                       #
+#   [quality-skip] - skips this workflow only                                  #
+# ============================================================================ #
+
+name: "CI: Quality"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["dev", "release"]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".editorconfig"
+      - ".github/workflows/ci-quality.yaml"
+  pull_request:
+    branches: ["dev", "release"]
+
+concurrency:
+  group: "quality-${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: "read"
+
+jobs:
+  # Check if the commit message / PR title contains skip tags
+  check:
+    name: "Skip Check"
+    runs-on: "ubuntu-latest"
+    outputs:
+      should_skip: ${{ steps.belay.outputs.issued }}
+
+    steps:
+      - name: "Run: Check skip tags"
+        id: "belay"
+        uses: OctalMesh/belay-action@v1
+        with:
+          signal_tags: "[ci-skip],[quality-skip]"
+
+  # Perform quality analysis
+  quality:
+    name: "Analyze"
+    needs: "check"
+    if: needs.check.outputs.should_skip != 'true'
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+
+    steps:
+      - name: "Setup: Checkout repository"
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: "Setup: Python"
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: "pyproject.toml"
+
+      - name: "Setup: Install dependencies"
+        run: 'pip install ".[lint]"'
+
+      - name: "Run: Ruff"
+        run: "ruff check ."
+
+  # Pull requests into dev must carry a changeset
+  changeset:
+    name: "Changeset"
+    needs: "check"
+    if: >-
+      needs.check.outputs.should_skip != 'true' &&
+      github.event_name == 'pull_request' &&
+      github.base_ref == 'dev' &&
+      github.actor != 'dependabot[bot]'
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+
+    steps:
+      - name: "Setup: Checkout repository"
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: "Setup: Python"
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: "pyproject.toml"
+
+      - name: "Setup: Install dependencies"
+        run: "pip install -e ."
+
+      - name: "Run: Require a changeset for release-relevant changes"
+        run: 'octalfont release check --base "origin/dev" --github'

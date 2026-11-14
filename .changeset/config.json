@@ -1,0 +1,10 @@
+{
+  "name": "octalfont",
+  "scheme": "semver",
+  "versionFile": "pyproject.toml",
+  "baseBranch": "dev",
+  "releaseBranch": "release",
+  "tagPrefix": "v",
+  "changelog": "CHANGELOG.md",
+  "paths": ["src/**", "pyproject.toml"]
+}

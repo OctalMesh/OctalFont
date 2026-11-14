@@ -1,0 +1,158 @@
+# ============================================================================ #
+#                       Reusable: Font Publish Workflow                        #
+# ============================================================================ #
+# Runs when a GitHub Release is published (the one deliberate, human click on  #
+# the draft that the post-release workflow prepared). It rebuilds the font     #
+# from the release tag, verifies it, packages it in the upstream layout,       #
+# attests the archive and attaches it to the Release:                          #
+#                                                                              #
+#   <Family>-vX.Y.Z.zip                                                        #
+#     fonts/ttf, fonts/variable   built binaries                               #
+#     OFL.txt, AUTHORS.txt, CONTRIBUTORS.txt, README.md                        #
+#                                                                              #
+# The same fonts are also packaged for npm (`octalfont npm`): WOFF2 files by   #
+# script plus ready-made CSS, so any project can self-host them:               #
+#   npm install @octalmesh/octal-titan                                         #
+# The tarball is always attached to the Release. Publishing to npmjs.com is    #
+# opt-in: set the repository variable PUBLISH_NPM=true. Auth is either the     #
+# NPM_TOKEN secret or, without it, npm trusted publishing (OIDC). The package  #
+# is a plain OFL redistribution; fonts/, names and metadata are untouched.     #
+#                                                                              #
+# Caller permissions required: contents: write, id-token: write,               #
+# attestations: write. Provenance attestations need a public repository.       #
+#                                                                              #
+# See: RELEASING.md - for more details on the release process.                 #
+# ============================================================================ #
+
+name: "Reusable: Font Publish"
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        type: string
+        default: "3.12"
+
+permissions:
+  contents: "read"
+
+jobs:
+  publish:
+    name: "Build & Attach"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 30
+
+    permissions:
+      contents: "write"
+      id-token: "write"
+      attestations: "write"
+
+    steps:
+      - name: "Setup: Checkout repository"
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: "Setup: Python"
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: "Setup: Install dependencies"
+        run: "pip install -r requirements.txt"
+
+      - name: "Run: Verify release tag matches font version"
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION=$(octalfont release current)
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "::error::Release tag '$TAG' does not match the version in sources/font.yaml ('v$VERSION')."
+            exit 1
+          fi
+
+      - name: "Run: Verify sources, requirements and build"
+        env:
+          SOURCE_DATE_EPOCH: "0"
+        run: |
+          octalfont sources
+          if [ -n "$(git status --porcelain -- sources/)" ]; then
+            echo "::error::Generated sources are stale at this tag."
+            exit 1
+          fi
+          octalfont check
+          octalfont build
+
+      - name: "Run: Package"
+        env:
+          SOURCE_DATE_EPOCH: "0"
+        run: "octalfont package --out dist"
+
+      - name: "Run: Build npm package"
+        env:
+          SOURCE_DATE_EPOCH: "0"
+        run: |
+          PKG=$(octalfont npm --out dist/npm)
+          npm pack "$PKG" --pack-destination dist
+
+      - name: "Run: Attest build provenance"
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            dist/*.zip
+            dist/*.tgz
+
+      - name: "Run: Attach to the release"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: 'gh release upload "$TAG" dist/*.zip dist/*.tgz --clobber'
+
+      - name: "Run: Keep the npm tarball for the publish job"
+        uses: actions/upload-artifact@v7
+        with:
+          name: "npm-package"
+          path: "dist/*.tgz"
+          if-no-files-found: "error"
+
+  npm:
+    name: "Publish to npm"
+    needs: "publish"
+    if: vars.PUBLISH_NPM == 'true'
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+
+    environment:
+      name: "npm"
+
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: "Setup: Node.js"
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: "Setup: Download package"
+        uses: actions/download-artifact@v8
+        with:
+          name: "npm-package"
+          path: "dist/"
+
+      - name: "Run: Publish with token"
+        env:
+          HAS_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        if: env.HAS_TOKEN == 'true'
+        run: 'npm publish dist/*.tgz --access public --provenance'
+
+      - name: "Run: Publish with trusted publishing (OIDC)"
+        env:
+          HAS_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
+        if: env.HAS_TOKEN != 'true'
+        run: 'npm publish dist/*.tgz --access public'

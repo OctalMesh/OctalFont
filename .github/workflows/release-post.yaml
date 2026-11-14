@@ -1,0 +1,34 @@
+# ============================================================================ #
+#                             Post-Release Workflow                            #
+# ============================================================================ #
+# Runs on every push to release, i.e. right after the release PR is merged:    #
+# cuts the tag, opens a DRAFT GitHub Release and merges release back into dev. #
+# The logic lives in reusable-release-post.yaml (shared with the font          #
+# repositories). Distribution is a separate, deliberate step: clicking         #
+# "Publish" on the draft fires release-publish.yaml.                           #
+#                                                                              #
+# See: RELEASING.md - for more details on the release process.                 #
+# ============================================================================ #
+
+name: "Releasing: Post-Release"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["release"]
+
+concurrency:
+  group: "post-release"
+  cancel-in-progress: false
+
+permissions:
+  contents: "read"
+
+jobs:
+  post-release:
+    name: "Post-Release"
+    uses: ./.github/workflows/reusable-release-post.yaml
+    with:
+      kind: "tool"
+      title: "OctalFont"
+    secrets: "inherit"
