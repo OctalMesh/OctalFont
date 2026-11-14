@@ -1,15 +1,15 @@
 # Licensing
 
-OctalFont uses a **dual-license** model that separates the tooling code from the
-font files themselves.
+OctalFont uses a **split-license** model that separates the tooling code from
+the font files. Each is licensed where it lives.
 
 > [!NOTE]
-> Both code and font are provided **"as is"** without warranties of any kind.
+> Both code and fonts are provided **"as is"** without warranties of any kind.
 
-## Code - MIT License
+## Tool - MIT License
 
-All scripts, build tools, and configuration files in this repository are
-released under the [MIT License](../LICENSE-MIT.md).
+All code, build tooling, workflows and configuration in **this** repository are
+released under the [MIT License](../LICENSE.md).
 
 You may freely use, copy, modify, merge, publish, distribute, sublicense, and/or
 sell copies of the code, provided the original copyright notice and this
@@ -17,8 +17,13 @@ permission notice are included in all copies or substantial portions.
 
 ## Fonts - SIL Open Font License 1.1
 
-All font files (UFO sources, TTF, OTF, WOFF2) are licensed under the
-[SIL Open Font License 1.1](../LICENSE-OFL.md).
+Every font family is a separate repository and carries its own `OFL.txt`:
+
+| Family                                                          | License                                    |
+|-----------------------------------------------------------------|--------------------------------------------|
+| [Octal Titan](https://github.com/OctalMesh/octalfont-titan)     | [SIL OFL 1.1](https://openfontlicense.org) |
+| [Octal Cuprum](https://github.com/OctalMesh/octalfont-cuprum)   | [SIL OFL 1.1](https://openfontlicense.org) |
+| [Octal Mercury](https://github.com/OctalMesh/octalfont-mercury) | [SIL OFL 1.1](https://openfontlicense.org) |
 
 Key terms of the OFL:
 
@@ -29,14 +34,24 @@ Key terms of the OFL:
 | Modify and redistribute modified versions     | Must be released under the OFL  |
 | Bundle / sell as standalone font product      | Not permitted                   |
 
-> [!IMPORTANT]
-> **"OctalFont"** is the registered OFL reserved name covering the entire family.
-> The member names **Titan**, **Cuprum**, and **Mercury** are part of that family.
-> Any modified fork must use a different family name to avoid confusion with the
-> original and to comply with the OFL terms.
+The font files are not derived from the tool's code, so building a font with
+`octalfont` does not make the result MIT-licensed: the OFL of the font repository
+applies to the output.
 
-Attribution is required: modified versions must carry a notice stating they are
-based on OctalFont and must use a different family name.
+## Reserved Font Names
+
+The families do **not** declare a Reserved Font Name. The copyright line of each
+`OFL.txt` follows the Google Fonts convention:
+
+```text
+Copyright 2025 The Octal Titan Project Authors (https://github.com/OctalMesh/octalfont-titan)
+```
+
+## Authors and contributors
+
+Each font repository lists copyright holders in `AUTHORS.txt` (required). A
+`CONTRIBUTORS.txt` is **optional**: add it only when there are contributors who are
+not already in `AUTHORS.txt`. An empty placeholder is flagged by `octalfont check`.
 
 #
 
@@ -44,6 +59,7 @@ based on OctalFont and must use a different family name.
 
 - [Index](README.md)
 - [Licensing](licensing.md)
+- [Releasing](../RELEASING.md)
 
 ## Design
 
@@ -54,5 +70,5 @@ based on OctalFont and must use a different family name.
 
 - [Metrics](technical/metrics.md)
 - [Axes](technical/axes.md)
-- [Building the Font](technical/build.md)
+- [Building the Fonts](technical/build.md)
 - [Configuration](technical/configuration.md)

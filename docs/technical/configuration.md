@@ -1,79 +1,128 @@
 # Configuration
 
-All runtime settings for the OctalFont build toolchain are controlled through a
-single `.env` file at the repository root. The file is loaded automatically
-every time the `octalfont` CLI starts - no command-line flags or script edits
-needed.
+A font repository is described by three small files. Everything else in
+`sources/` is generated.
 
-> [!IMPORTANT]
-> At least one of `.env` or `.env.example` **must** exist and contain active
-> values. The toolchain has no built-in defaults - if neither file is found
-> (or both are empty), `octalfont` aborts immediately with a fatal error.
+| File                                           | Owner     | Purpose                                                          |
+|------------------------------------------------|-----------|------------------------------------------------------------------|
+| `sources/font.yaml`                            | you       | names, version, metrics, spacing, glyph sets, build options      |
+| `sources/composites.yaml`                      | you       | placement of accents and other composite glyphs                  |
+| `sources/features.fea`                         | you       | hand-written OpenType features (marks and kerning are generated) |
+| `.changeset/config.json`                       | you       | how `octalfont release` versions this repository                 |
+| `sources/ufo/`, `*.designspace`, `config.yaml` | generated | output of `octalfont sources`; committed                         |
 
-## How It Works
-
-| File           | Tracked in git    | Purpose                                                                                        |
-|----------------|-------------------|------------------------------------------------------------------------------------------------|
-| `.env.example` | ✅ yes             | Ships with the repo; defines project-wide defaults; loaded automatically when `.env` is absent |
-| `.env`         | ❌ no (gitignored) | Your local overrides; takes precedence over `.env.example`                                     |
-
-**Load order** inside `octalfont`:
-
-```mermaid
-flowchart LR
-    A[logging.sh] --> B[common.sh] --> C[dotenv.sh] --> D[load_dotenv] --> E[env.sh] --> F[...]
-```
-
-`load_dotenv` sources either `.env` (preferred) or `.env.example` (fallback)
-using `set -a`, so every key=value pair is automatically exported to the
-environment of all child processes.  If neither file is usable, the process
-exits with a fatal error before any build work begins.
-
-## Reference
-
-### Logging
-
-| Variable         | Default             | Description                                                                     |
-|------------------|---------------------|---------------------------------------------------------------------------------|
-| `LOG_LEVEL`      | `INFO`              | Console verbosity. One of `DEBUG` `INFO` `SUCCESS` `WARN` `ERROR` `FATAL` `OFF` |
-| `LOG_ERASE_DAYS` | `7`                 | Days to keep old log directories in `logs/`. `-1` disables cleanup              |
-| `LOG_DIR`        | `${REPO_ROOT}/logs` | Per-run log subdirectories                                                      |
-| `NO_COLOR`       | *(unset)*           | Set to any non-empty value (e.g. `1`) to suppress ANSI colour codes             |
-
-### Build
-
-| Variable      | Default | Description                                                            |
-|---------------|---------|------------------------------------------------------------------------|
-| `BUILD_NO_QA` | `0`     | Set to `1` to skip fontbakery QA after every build (same as `--no-qa`) |
-
-## Precedence
-
-Settings are applied in this order, last writer wins:
-
-```mermaid
-flowchart TD
-    A["common.sh<br/>path defaults"] --> B
-    B[".env.example<br/>project defaults - loaded when .env is absent"] --> C
-    C[".env<br/>your local overrides"] --> D
-    D["CLI flags<br/>--no-qa, --verbose, ... - override per invocation"]
-```
-
-So a value set in `.env` always beats `.env.example`, and a CLI flag always
-beats both.
-
-## Automation / CI
-
-In CI environments you typically don't have a `.env` file. Set variables
-directly in the pipeline environment instead - they are picked up before
-`load_dotenv` runs and take the same effect:
+## `sources/font.yaml`
 
 ```yaml
-# GitHub Actions example
-env:
-  LOG_LEVEL: INFO
-  BUILD_NO_QA: 1
-  NO_COLOR: 1
+family: Octal Titan
+version: "1.000" # MAJOR.MINOR, three-digit minor; bumped by the release flow
+copyright_year: 2025
+repository: https://github.com/OctalMesh/octalfont-titan
+vendor_id: OCTM
+designer: Nykon Hrytsyshyn
+designer_url: https://nykon.me
+manufacturer: OctalMesh
+manufacturer_url: https://octalmesh.com
+description: One sentence about the family.
+
+masters:
+  - style: Regular
+    weight: 400
+    svg: svg
+
+glyphsets:
+  required: [GF_Latin_Core]    # missing glyphs here FAIL the check
+  optional: [GF_Cyrillic_Plus] # missing glyphs here only WARN
+
+scripts: [Latn, Cyrl]          # written to the `meta` table
+
+svg:
+  artboard: 1000               # y=0 is the cap height, y=artboard the baseline
+
+spacing:
+  mode: monospace              # or proportional
+  advance: 850
+  zero_width_marks: true
+
+metrics:
+  upm: 1000
+  cap_height: 700
+  x_height: 500
+  ascender: 1050
+  descender: -300
+
+build:
+  buildOTF: false
+  buildWebfont: false
+
+npm:                             # optional, for `octalfont npm`
+  name: "@octalmesh/octal-titan" # default: @<github owner>/<family-slug>
 ```
+
+| Key            | Notes                                                                                                |
+|----------------|------------------------------------------------------------------------------------------------------|
+| `version`      | Never edit by hand after the first release: the release flow owns it                                 |
+| `masters`      | One entry per weight; more than one makes `build` produce a variable font                            |
+| `glyphsets`    | Names of the lists shipped with the tool: `GF_Latin_Core`, `GF_Latin_Vietnamese`, `GF_Cyrillic_Plus` |
+| `metrics`      | Cannot change after release; settle them (and Vietnamese) before `1.000`                             |
+| `npm.name`     | npm package name; must be a valid scoped or unscoped npm name                                        |
+| `spacing.mode` | `monospace` uses `advance`; `proportional` adds `lsb` / `rsb` around the SVG body                    |
+
+A project may put its own glyph-set lists into `sources/glyphsets/`; they take
+precedence over the built-in ones.
+
+## `sources/composites.yaml`
+
+Precomposed letters are derived from Unicode decompositions. Tune placement
+here, all values in font units:
+
+```yaml
+gap: 40       # base -> first mark
+stack_gap: 20 # mark -> next stacked mark
+marks:
+  cedillacomb:
+    gap: 0
+overrides:
+  Aacute:
+    acutecomb:
+      dx: 10
+anchors:
+  J:
+    top: [310, 700]
+exclude: [Lcaron, dcaron, lcaron, tcaron] # never auto-built: draw them as SVG
+glyphs:
+  dcaron:
+    base: d
+    marks: [caroncomb]
+```
+
+## `.changeset/config.json`
+
+```json
+{
+  "name": "octalfont-titan",
+  "scheme": "font",
+  "versionFile": "sources/font.yaml",
+  "baseBranch": "dev",
+  "releaseBranch": "release",
+  "tagPrefix": "v",
+  "changelog": "CHANGELOG.md",
+  "paths": ["sources/**"]
+}
+```
+
+| Key           | Meaning                                                                     |
+|---------------|-----------------------------------------------------------------------------|
+| `name`        | key used in changeset front matter and the `CHANGELOG.md` title             |
+| `scheme`      | `semver` (`X.Y.Z`, the tool) or `font` (`MAJOR.MINOR`, fonts)               |
+| `versionFile` | file holding the version: `pyproject.toml` or `sources/font.yaml`           |
+| `paths`       | globs that require a changeset in pull requests (`octalfont release check`) |
+
+## Environment
+
+| Variable            | Effect                                                              |
+|---------------------|---------------------------------------------------------------------|
+| `SOURCE_DATE_EPOCH` | fixed timestamps for reproducible fonts and archives                |
 
 #
 
@@ -81,6 +130,7 @@ env:
 
 - [Index](../README.md)
 - [Licensing](../licensing.md)
+- [Releasing](../../RELEASING.md)
 
 ## Design
 
@@ -89,7 +139,7 @@ env:
 
 ## Technical
 
-- [Metrics](metrics.md)
-- [Axes](axes.md)
-- [Building the Font](build.md)
-- [Configuration](configuration.md)
+- [Metrics](../technical/metrics.md)
+- [Axes](../technical/axes.md)
+- [Building the Fonts](../technical/build.md)
+- [Configuration](../technical/configuration.md)

@@ -26,8 +26,9 @@ Glyphs are designed by hand in a sketchbook. The sketch establishes:
 ### 1. Adobe Illustrator Source
 
 Sketch concepts are redrawn or traced in **Adobe Illustrator** and saved as
-`.ai` files under `sources/<Family>/ai/` in the relevant category subfolder
-(`uppercase/`, `lowercase/`, `numerals/`, `punctuation/`, `symbols/`).
+`.ai` files under `sources/ai/` of the family repository in the relevant
+category subfolder (`uppercase/`, `lowercase/`, `numerals/`, `punctuation/`,
+`symbols/`).
 
 > [!NOTE]
 > Files in `ai/` are **not** consumed directly by the build pipeline. They
@@ -36,14 +37,15 @@ Sketch concepts are redrawn or traced in **Adobe Illustrator** and saved as
 ### 2. SVG Refinement
 
 Glyphs are exported from Adobe Illustrator as SVG files into
-`sources/<Family>/svg/` and slightly hand-tuned if needed.
+`sources/svg/` of the family repository and slightly hand-tuned if needed.
 The exported files are ready to be consumed by the build pipeline as-is.
 
 ### 3. UFO Export
 
-The `tools/python/svg_to_ufo.py` script reads the SVG files, applies the
-coordinate mapping defined in `metrics.yaml`, and writes `.glif` files into
-the appropriate UFO master under `sources/<Family>/ufo/`.
+`octalfont sources` reads the SVG files, applies the coordinate mapping from the
+`metrics` and `svg` sections of `sources/font.yaml`, and writes `.glif` files into
+the appropriate UFO master under `sources/ufo/` (see
+[Configuration](../../technical/configuration.md)).
 
 > [!TIP]
 > This step is automated - `svg_to_ufo.py` is called by the build pipeline
@@ -55,6 +57,7 @@ the appropriate UFO master under `sources/<Family>/ufo/`.
 
 - [Index](../../README.md)
 - [Licensing](../../licensing.md)
+- [Releasing](../../../RELEASING.md)
 
 ## Design
 

@@ -1,143 +1,112 @@
-# Building the Font
+# Building the Fonts
 
-The OctalFont build pipeline is orchestrated by the `octalfont` CLI, a Bash
-script that wraps `gftools builder`, `fontbakery`, and `diffenator2`.
+Fonts are built with the `octalfont` command-line tool from the SVG drawings
+kept in a font repository. The tool is a Python package (Python 3.10 or newer);
+a font repository pins the exact tool version it was built with in its own
+`requirements.txt`.
 
 ## Prerequisites
 
-| Tool   | Required version | Notes                                       |
-|--------|------------------|---------------------------------------------|
-| Python | \>= 3.9          | `python3` or `python`                       |
-| pip    | any              | Bundled with Python                         |
-| ninja  | any              | Used internally by fontmake                 |
-| Bash   | \>= 4.0          | Git Bash on Windows, native on Unix / macOS |
+| Requirement  | Why                                                               |
+|--------------|-------------------------------------------------------------------|
+| Python 3.10+ | runs the tool                                                     |
+| Git          | submodules, changesets and the release commands                   |
+| A venv       | keeps the font tooling away from your system Python (recommended) |
 
-All Python dependencies (fontmake, gftools, fontbakery, diffenator2) are
-installed automatically into a project-local virtualenv during setup.
+`gftools`, `fontmake` and Font Bakery come with the `build` extra and need no
+manual setup.
 
-## First-Time Setup
+## Install
 
-Create the virtualenv, compile lock files, and install all dependencies:
+### Inside a font repository (recommended)
 
-```bash
-octalfont env --setup
+The repository already pins the tool:
+
+```sh
+git clone https://github.com/OctalMesh/octalfont-titan && cd octalfont-titan
+python -m venv .venv
+. .venv/bin/activate            # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-Verify the environment is ready:
+### In the OctalFont monorepo (working on the tool and the fonts together)
 
-```bash
-octalfont env
+```sh
+git clone --recurse-submodules https://github.com/OctalMesh/OctalFont && cd OctalFont
+python -m venv .venv && . .venv/bin/activate
+pip install -e ".[build,test]"   # editable: changes to src/ apply immediately
 ```
 
-The virtualenv is created at `.venv/` in the repository root and is activated
-automatically whenever a build or test command is run.
+Forgot `--recurse-submodules`? Run `git submodule update --init`.
 
-> [!NOTE]
-> `requirements.txt` is git-ignored and never committed. `octalfont env --setup`
-> compiles it automatically from `requirements.in` on every run, so the
-> environment is always up to date after setup.
+## Commands
 
-## Build Commands
+Run them from the font repository root, or point the tool at one with `-C`:
 
-Build all families marked as 'active' in sources/config.yaml:
-
-```bash
-octalfont build --all
+```sh
+octalfont -C fonts/titan check
 ```
 
-Build a single family by its ID:
+| Command                      | What it does                                                                       |
+|------------------------------|------------------------------------------------------------------------------------|
+| `octalfont sources`          | `sources/svg` -> UFO masters, composite glyphs, designspace and `config.yaml`      |
+| `octalfont check`            | legal files, vertical metrics and glyph-set coverage                               |
+| `octalfont check --missing`  | the same, plus the names of every missing glyph                                    |
+| `octalfont build`            | `sources` + gftools builder + `meta` table; output in `fonts/`                     |
+| `octalfont package`          | zips `fonts/` and the legal files into `dist/<Family>-vX.YYY.zip`                  |
+| `octalfont npm`              | builds the npm package (`dist/npm/<slug>/`: WOFF2 per script, CSS, `package.json`) |
+| `octalfont postprocess FILE` | adds the `meta` table to an already built TTF                                      |
+| `octalfont release ...`      | changesets, versioning and release gates, see [RELEASING.md](../../RELEASING.md)   |
 
-```bash
-octalfont build --family=titan
-octalfont build --family=cuprum
-octalfont build --family=mercury
+`check` exits with a non-zero status only on `FAIL`; `WARN` lines are advisory.
+
+## Typical session
+
+```sh
+octalfont sources            # after editing an SVG, composites.yaml or font.yaml
+octalfont check --missing    # check for missing glyphs and vertical metrics
+octalfont build              # fonts/ttf/*.ttf (and fonts/variable/ for variable families)
+git add sources && git commit
 ```
 
-Build without running fontbakery QA afterwards:
+`sources/ufo/`, `*.designspace` and `sources/config.yaml` are generated but committed:
+Google Fonts needs the sources in the repository, and CI fails when they are stale.
 
-```bash
-octalfont build --all --no-qa
+## Web package
+
+`octalfont npm` turns the built TTFs into a package that developers install with npm:
+
+```sh
+octalfont build
+octalfont npm                    # -> dist/npm/octal-titan/
+cd dist/npm/octal-titan && npm pack --dry-run
 ```
 
-Build with verbose (DEBUG-level) output:
+The package has WOFF2 files per script and weight (`files/`), CSS with
+`unicode-range` (`index.css`, `400.css`, `latin.css`, `variable.css` ...),
+`metadata.json`, the OFL and a README. Scripts come from the glyph sets in
+`font.yaml` (`latin`, `cyrillic`, `vietnamese`); a variable font gets a
+`font-weight` range. The package version maps the font version: `1.001` becomes
+`1.1.0`. The package name defaults to `@<github owner>/<family-slug>` and can be
+changed with `npm.name` in `font.yaml` (see [Configuration](configuration.md)).
 
-```bash
-octalfont build --family=titan --verbose
+## Reproducible builds
+
+Set `SOURCE_DATE_EPOCH` to get identical bytes on every run (fonts, the zip and
+the WOFF2 files). CI uses `0`.
+
+```sh
+SOURCE_DATE_EPOCH=0 octalfont build
 ```
 
-## Build Targets
+## Troubleshooting
 
-For each family the following files are produced under `fonts/<FamilyName>/`:
-
-| Target          | Flag            | Output                 |
-|-----------------|-----------------|------------------------|
-| Static TrueType | `buildTTF`      | `ttf/*.ttf`            |
-| Static OpenType | `buildOTF`      | `otf/*.otf`            |
-| Web fonts       | `buildWebfont`  | `webfonts/*.woff2`     |
-| Variable font   | `buildVariable` | `variable/*[wght].ttf` |
-
-## Testing & Proofing
-
-Run fontbakery QA checks on all built fonts:
-
-```bash
-octalfont test --all
-```
-
-Run fontbakery QA checks on a single family by its ID:
-
-```bash
-octalfont test --family=titan
-octalfont test --family=cuprum
-octalfont test --family=mercury
-```
-
-Generate HTML proof documents via diffenator2:
-
-```bash
-octalfont proof --all
-```
-
-## Cleaning Build Artifacts
-
-Remove fonts/ build outputs:
-
-```bash
-octalfont clean --all
-```
-
-Full reset - also removes logs/, QA reports, and Python caches:
-
-```bash
-octalfont clean --all --deep
-```
-
-> [!WARNING]
-> `--deep` removes `logs/`, QA reports, and all Python caches (`__pycache__`,
-> `.pytest_cache`, `.pyc`). UFO masters are **never** deleted - hand-edited
-> `features.fea` files inside them are always preserved.
-
-## Log Files
-
-Build logs are written to `logs/` with a timestamp-prefixed directory per run.
-
-> [!NOTE]
-> You can specify a custom erase threshold for logs. By default, logs older than
-> 7 days are deleted automatically on the next build.
-
-## Updating Dependencies
-
-```bash
-octalfont update
-```
-
-Re-compiles both `requirements.txt` and `requirements-test.txt` from their `.in`
-constraints and re-syncs the venv. Use this when you want to pull in newer
-versions of the build tools, or after pulling changes to any `.in` file.
-
-> [!TIP]
-> `octalfont env --setup` already does this automatically. Run
-> `octalfont update` only when you need to re-pin without recreating the venv.
+| Symptom                           | Fix                                                                        |
+|-----------------------------------|----------------------------------------------------------------------------|
+| `gftools not found`               | install the `build` extra: `pip install "octalfont[build]"`                |
+| CI: "Generated sources are stale" | run `octalfont sources` and commit `sources/`                              |
+| `fonts/` is empty after `build`   | read the gftools output above the error; the build did not finish          |
+| `check` reports missing glyphs    | `octalfont check --missing`, then draw them in `sources/ai` and export SVG |
 
 #
 
@@ -145,6 +114,7 @@ versions of the build tools, or after pulling changes to any `.in` file.
 
 - [Index](../README.md)
 - [Licensing](../licensing.md)
+- [Releasing](../../RELEASING.md)
 
 ## Design
 
@@ -153,7 +123,7 @@ versions of the build tools, or after pulling changes to any `.in` file.
 
 ## Technical
 
-- [Metrics](metrics.md)
-- [Axes](axes.md)
-- [Building the Font](build.md)
-- [Configuration](configuration.md)
+- [Metrics](../technical/metrics.md)
+- [Axes](../technical/axes.md)
+- [Building the Fonts](../technical/build.md)
+- [Configuration](../technical/configuration.md)

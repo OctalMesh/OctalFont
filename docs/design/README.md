@@ -10,8 +10,8 @@ the [OctalMesh](https://octalmesh.com) design system.
 Every glyph starts as a pencil sketch in a physical sketchbook. Proportions,
 stroke rhythm, and geometric logic are resolved on paper before any vector
 work begins. The sketch is then redrawn in **Adobe Illustrator** and saved
-under `sources/<family>/ai/` before being exported to SVG for the build
-pipeline.
+under `sources/ai/` of the family repository before being exported to SVG for
+the build pipeline.
 
 ### Strict Geometry
 
@@ -62,6 +62,7 @@ properties of the material it is named after:
 
 - [Index](../README.md)
 - [Licensing](../licensing.md)
+- [Releasing](../../RELEASING.md)
 
 ## Design
 
