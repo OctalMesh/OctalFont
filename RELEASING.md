@@ -58,25 +58,87 @@ The highest level among the pending changesets wins.
 
 ## Workflows
 
-| Workflow                                             | Trigger                                    | Result                                                                                    |
-|------------------------------------------------------|--------------------------------------------|-------------------------------------------------------------------------------------------|
-| `CI: Test`, `CI: Build`, `CI: Quality`, `CI: CodeQL` | push and pull request to `dev` / `release` | checks (tool repository)                                                                  |
-| `CI: Build`                                          | push and pull request to `dev` / `release` | sources fresh, `octalfont check`, build, Font Bakery, changeset check (font repositories) |
-| `Releasing: Release PR`                              | push to `dev`                              | draft release pull request, rebuilt                                                       |
-| `Releasing: Readiness`                               | pull request into `release`                | version moved forward, changelog present, no changeset left                               |
-| `Releasing: Post-Release`                            | push to `release`                          | tag, draft GitHub Release, sync into `dev`                                                |
-| `Releasing: Publish`                                 | GitHub Release published                   | build, attest, attach assets; fonts: npm package, optional npm publish                    |
+| Workflow                                             | Trigger                                        | Result                                                                                    |
+|------------------------------------------------------|------------------------------------------------|-------------------------------------------------------------------------------------------|
+| `CI: Test`, `CI: Build`, `CI: Quality`, `CI: CodeQL` | push and pull request to `dev` / `release`     | checks (tool repository)                                                                  |
+| `CI: Build`                                          | push and pull request to `dev` / `release`     | sources fresh, `octalfont check`, build, Font Bakery, changeset check (font repositories) |
+| `Releasing: Release PR`                              | push to `dev`                                  | draft release pull request, rebuilt                                                       |
+| `Releasing: Readiness`                               | pull request into `release`                    | version moved forward, changelog present, no changeset left                               |
+| `Releasing: Post-Release`                            | push to `release`                              | tag, draft GitHub Release, sync into `dev`                                                |
+| `Releasing: Publish`                                 | GitHub Release published                       | build, attest, attach assets; fonts: npm package, optional npm publish                    |
+| `Releasing: Checklist`                               | CI workflow finished, release PR ready / draft | ticks or unticks the "Before merging" boxes of the release PR                             |
+| `Project: Sync`                                      | pull request events; GitHub Release published  | labels, project fields and Status of pull requests and issues; `Released` on publish      |
+| `Dependabot: Auto-merge`                             | Dependabot pull request into `dev`             | auto-merge for patch-only updates                                                         |
 
-The logic of the release workflows lives once, in OctalFont
-(`reusable-release-pr.yaml`, `reusable-release-readiness.yaml`,
-`reusable-release-post.yaml`, `reusable-font-ci.yaml`,
-`reusable-font-publish.yaml`). Font repositories contain only thin callers that
-pin a tag of this repository, for example
-`OctalMesh/OctalFont/.github/workflows/reusable-release-pr.yaml@v0.1.0`.
+The logic of the release workflows lives once, in OctalFont. Font repositories
+contain only thin callers that pin a tag of this repository.
 
 Skip tags work in commit messages and pull request titles: `[ci-skip]` skips
 every CI workflow, `[test-skip]`, `[build-skip]`, `[quality-skip]` and
 `[ql-skip]` skip one. Release workflows ignore them.
+
+## Pull requests and the project board
+
+### Pull request titles
+
+Titles follow `type(scope): summary`, for example
+`feat(titan): add Cyrillic Plus glyphs`. They become the lines of the generated
+release notes, so write them as a changelog entry. The release pull request is
+named by the bot: `release: OctalFont v0.1.0`.
+
+| Type                                                        | Label         | Release notes section | Default priority |
+|-------------------------------------------------------------|---------------|-----------------------|------------------|
+| `feat`                                                      | Suggestion    | New features          | Medium           |
+| `fix`                                                       | Bug           | Bug fixes             | High             |
+| `docs`                                                      | Documentation | Documentation         | Low              |
+| `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore` | Maintenance   | Maintenance           | Low              |
+| `chore(deps)`                                               | Dependencies  | Dependencies          | Low              |
+| `release`                                                   | Release       | excluded              | High             |
+
+The **PR Title** check of `Project: Sync` fails on any other format. Bots are
+exempt. Skip tags (`[ci-skip]`, ...) may still be appended to the summary.
+
+### What `Project: Sync` does
+
+It adds every pull request to the GitHub project and keeps the fields in step.
+Issues closed by a pull request (`Closes #123` in its description) follow its
+Status.
+
+| Event                                    | Status        |
+|------------------------------------------|---------------|
+| pull request opened or reopened          | `In Progress` |
+| pull request merged into `dev`           | `Staging`     |
+| GitHub Release published (the PRs in it) | `Released`    |
+
+`Backlog` and `To-Do` are set by hand. A pull request closed without merging is
+left alone (use the project's *Auto-archive* workflow for those).
+
+- **Size** is recomputed on every update from the changed lines: up to 50 is
+  `Size: Small`, up to 300 `Size: Medium`, more `Size: Large`. `CHANGELOG.md`,
+  changesets, lock files and `*.ufo/` are not counted.
+- **Priority** gets a default from the type (table above) only while the field
+  is empty, so a value you set by hand is never overwritten.
+- **Labels** come from the title type; changing the type in the title swaps the
+  label. The labels drive the grouping of the generated release notes
+  (`.github/release.yaml`).
+
+### The release pull request checklist
+
+`Releasing: Checklist` keeps the first two boxes of **Before merging** true:
+*CI, CodeQL and Readiness are green* and *Ready for review*. They are ticked
+and unticked automatically. *Merge with a merge commit* is a decision made at
+the merge button and stays manual; restrict the merge methods of `release` in
+its ruleset to enforce it.
+
+### Dependabot
+
+Pull requests into `dev` that only contain semver **patch** updates (checked
+per dependency, also for groups) get auto-merge enabled and merge once the
+required checks pass. Minor and major updates wait for a human, and so do
+updates of the `OctalMesh/OctalFont` workflow reference itself (input
+`exclude-dependencies`): in a font repository it must move together with the
+`octalfont` pin. Dependency updates need no changeset and never release on their
+own; they ship with the next release.
 
 ## Where the tool is distributed
 
@@ -140,3 +202,8 @@ octalfont release previous VERSION                            # highest tag belo
 | *Publish*: "does not match the version"                        | The tag was moved or created by hand; delete the draft and the tag, re-run *Post-Release*                             |
 | Font CI: "Generated sources are stale"                         | Run `octalfont sources` and commit `sources/`                                                                         |
 | A font release must be redone                                  | Versions are never reused: delete nothing, add a changeset and release the next version                               |
+| `Project: Sync` warns "has no field ..."                       | The project lacks that field or option, or its name differs; the names must match exactly (see Setup)                 |
+| `Project: Sync` fails: "not found or is not readable"          | The App lacks the organization permission **Projects: Read and write**, or the project number is wrong                |
+| The "Before merging" boxes are not ticked                      | The checks are not all green or skipped, or the PR is still a draft; see the *Releasing: Checklist* run summary       |
+| Dependabot patch PR does not merge                             | Auto-merge is not allowed in the repository, `dev` has no required checks, or a required review is missing            |
+| *PR Title* fails                                               | Rename to `type(scope): summary`; the check runs again when the title is edited                                       |

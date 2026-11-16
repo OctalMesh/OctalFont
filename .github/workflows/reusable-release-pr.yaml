@@ -1,7 +1,7 @@
 # ============================================================================ #
 #                        Reusable: Release PR Workflow                         #
 # ============================================================================ #
-# Keeps a single DRAFT "Release vX.Y.Z" pull request up to date against the    #
+# Keeps a single DRAFT "release: vX.Y.Z" pull request up to date against the   #
 # release branch. Used by OctalFont itself and by every font repository.       #
 #                                                                              #
 # The PR is a derived artifact - it is rebuilt from scratch, never patched:    #
@@ -36,6 +36,11 @@ on:
         description: "Repository kind: 'tool' (octalfont itself) or 'font' (a font repository)"
         type: string
         required: true
+
+      title:
+        description: "Name shown in the PR title, e.g. 'OctalFont' -> 'release: OctalFont v0.1.0'. Empty -> 'release: v0.1.0'"
+        type: string
+        default: ""
 
       base-branch:
         type: string
@@ -206,6 +211,7 @@ jobs:
             echo "<details>"
             echo "<summary>Commits since the last release</summary>"
             echo
+            # shellcheck disable=SC2016  # the backticks are literal markdown
             git log --no-merges --max-count=100 --format='- %s (`%h`)' "origin/$RELEASE..origin/$BASE"
             if [ "$TOTAL" -gt 100 ]; then
               echo "- _... and $((TOTAL - 100)) more_"
@@ -215,8 +221,8 @@ jobs:
             echo
             echo "### Before merging"
             echo
-            echo "- [ ] CI, CodeQL and **Releasing: Readiness** are green"
-            echo "- [ ] Mark the PR **Ready for review**"
+            echo "- [ ] CI, CodeQL and **Releasing: Readiness** are green <!-- release-check:ci -->"
+            echo "- [ ] Mark the PR **Ready for review** <!-- release-check:ready -->"
             echo "- [ ] Merge with a **merge commit** (not squash / rebase)"
             echo
             echo "Merging tags \`v$VERSION\`, opens a draft GitHub Release and syncs \`$RELEASE\` back into \`$BASE\`. See [RELEASING.md]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$BASE/RELEASING.md)."
@@ -228,7 +234,14 @@ jobs:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           VERSION: ${{ steps.candidate.outputs.version }}
           CHANGED: ${{ steps.candidate.outputs.changed }}
+          TITLE: ${{ inputs.title }}
         run: |
+          if [ -n "$TITLE" ]; then
+            PR_TITLE="release: $TITLE v$VERSION"
+          else
+            PR_TITLE="release: v$VERSION"
+          fi
+
           gh label create "Release" --color "1f6feb" --description "Release pull request" --force
           gh label create "Automated" --color "6e7781" --description "Created by automation" --force
 
@@ -236,7 +249,7 @@ jobs:
 
           if [ -z "$EXISTING" ]; then
             gh pr create --draft --base "$RELEASE" --head "$CANDIDATE" \
-              --title "Release v$VERSION" \
+              --title "$PR_TITLE" \
               --body-file /tmp/release-pr-body.md \
               --label "Release" --label "Automated"
             echo "Opened draft release PR for v$VERSION." >> "$GITHUB_STEP_SUMMARY"
@@ -246,10 +259,14 @@ jobs:
           NUMBER=$(jq -r '.number' <<<"$EXISTING")
           IS_DRAFT=$(jq -r '.isDraft' <<<"$EXISTING")
 
-          gh pr edit "$NUMBER" \
-            --title "Release v$VERSION" \
-            --body-file /tmp/release-pr-body.md \
-            --add-label "Release" --add-label "Automated"
+          # The body is rewritten only when the candidate changed: it is identical
+          # otherwise, and rewriting it would reset the "Before merging" checkboxes
+          # that the Releasing: Checklist workflow keeps up to date.
+          EDIT_ARGS=(--title "$PR_TITLE" --add-label "Release" --add-label "Automated")
+          if [ "$CHANGED" = "true" ]; then
+            EDIT_ARGS+=(--body-file /tmp/release-pr-body.md)
+          fi
+          gh pr edit "$NUMBER" "${EDIT_ARGS[@]}"
 
           if [ "$CHANGED" = "true" ] && [ "$IS_DRAFT" = "false" ]; then
             gh pr ready "$NUMBER" --undo

@@ -93,7 +93,7 @@ jobs:
 
       - name: "Run: Font Bakery"
         continue-on-error: ${{ !inputs.fontbakery-blocking }}
-        run: 'fontbakery check-googlefonts --skip-network -l WARN $(find fonts -name "*.ttf" | sort)'
+        run: 'find fonts -name "*.ttf" -print0 | sort -z | xargs -0 fontbakery check-googlefonts --skip-network -l WARN'
 
       - name: "Run: Upload fonts"
         uses: actions/upload-artifact@v7

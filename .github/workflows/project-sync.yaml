@@ -1,0 +1,38 @@
+# ============================================================================ #
+#                              Project Sync Workflow                           #
+# ============================================================================ #
+# Labels pull requests by the type of their title, keeps them (and the issues  #
+# they close) in step with the GitHub project (Status, Size, Priority) and     #
+# moves everything to Released when a GitHub Release is published. The logic   #
+# lives in reusable-project-sync.yaml.                                         #
+#                                                                              #
+# pull_request_target is deliberate: pull requests from forks need the App     #
+# secrets too. The workflow never checks out or runs code of the pull request. #
+#                                                                              #
+# Auth: the GitHub App (BOT_CLIENT_ID, BOT_PRIVATE_KEY) with the organization  #
+# permission "Projects: Read and write".                                       #
+# ============================================================================ #
+
+name: "Project: Sync"
+
+on:
+  pull_request_target:
+    types:
+      - "opened"
+      - "reopened"
+      - "edited"
+      - "synchronize"
+      - "ready_for_review"
+      - "converted_to_draft"
+      - "closed"
+  release:
+    types: ["published"]
+
+permissions:
+  contents: "read"
+
+jobs:
+  project-sync:
+    name: "Project Sync"
+    uses: ./.github/workflows/reusable-project-sync.yaml
+    secrets: "inherit"

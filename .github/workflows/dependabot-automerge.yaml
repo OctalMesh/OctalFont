@@ -1,0 +1,26 @@
+# ============================================================================ #
+#                        Dependabot Auto-merge Workflow                        #
+# ============================================================================ #
+# Enables auto-merge for Dependabot pull requests that only contain semver     #
+# patch updates. The logic lives in reusable-dependabot-automerge.yaml.        #
+#                                                                              #
+# See: RELEASING.md - Setup, for the repository settings it relies on.         #
+# ============================================================================ #
+
+name: "Dependabot: Auto-merge"
+
+on:
+  pull_request_target:
+    branches: ["dev"]
+    types: ["opened", "reopened", "synchronize"]
+
+permissions:
+  contents: "read"
+  pull-requests: "read"
+
+jobs:
+  automerge:
+    name: "Auto-merge"
+    if: github.actor == 'dependabot[bot]'
+    uses: ./.github/workflows/reusable-dependabot-automerge.yaml
+    secrets: "inherit"

@@ -70,8 +70,11 @@ Please ensure that:
 - A **changeset** is included: run `octalfont release add` (or
   `octalfont release add --empty` for docs, CI and test-only changes). Do not
   edit versions or `CHANGELOG.md` by hand, see [RELEASING.md](RELEASING.md)
+- The pull request title follows `type(scope): summary`, for example
+  `fix(build): keep the glyph order stable` (types: `feat`, `fix`, `docs`,
+  `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`)
 - Changes are focused and not overly broad
-- Related issues are referenced where relevant
+- Related issues are referenced where relevant (`Closes #123`)
 
 ## What we *do not* accept
 

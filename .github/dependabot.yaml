@@ -3,7 +3,9 @@
 # ============================================================================ #
 # This file defines the Dependabot configuration for this project. It keeps    #
 # Python dependencies and GitHub Actions up to date by opening pull requests   #
-# on a weekly schedule. Dependabot pull requests need no changeset.            #
+# on a weekly schedule. Dependabot pull requests need no changeset, and those  #
+# that only contain patch updates merge themselves once the required checks    #
+# pass (dependabot-automerge.yaml).                                            #
 #                                                                              #
 # See: https://dependabot.com                                                  #
 # ============================================================================ #

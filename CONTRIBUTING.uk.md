@@ -72,8 +72,11 @@ Pull request’и, що стосуються коду (скрипти збірк
 - Додано **changeset**: виконайте `octalfont release add` (або
   `octalfont release add --empty` для документації, CI та змін лише в тестах).
   Не редагуйте версії чи `CHANGELOG.md` вручну, див. [RELEASING.md](RELEASING.md)
+- Назва pull request’а має формат `type(scope): summary`, наприклад
+  `fix(build): keep the glyph order stable` (типи: `feat`, `fix`, `docs`,
+  `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`)
 - Зміни сфокусовані та не надто широкі
-- Пов’язані issue згадані там, де це доречно
+- Пов’язані issue згадані там, де це доречно (`Closes #123`)
 
 ## Що ми *не* приймаємо
 

@@ -1,7 +1,7 @@
 # ============================================================================ #
 #                              Release PR Workflow                             #
 # ============================================================================ #
-# Keeps a single DRAFT "Release vX.Y.Z" pull request up to date against        #
+# Keeps a single DRAFT "release: OctalFont vX.Y.Z" PR up to date against       #
 # release whenever changesets land on dev. The logic lives in                  #
 # reusable-release-pr.yaml (shared with the font repositories).                #
 #                                                                              #
@@ -30,4 +30,5 @@ jobs:
     uses: ./.github/workflows/reusable-release-pr.yaml
     with:
       kind: "tool"
+      title: "OctalFont"
     secrets: "inherit"

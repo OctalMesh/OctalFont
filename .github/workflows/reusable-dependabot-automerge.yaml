@@ -1,0 +1,112 @@
+# ============================================================================ #
+#                     Reusable: Dependabot Auto-merge Workflow                 #
+# ============================================================================ #
+# Turns on auto-merge for Dependabot pull requests into dev when EVERY         #
+# dependency they update is a semver PATCH bump (grouped pull requests are     #
+# checked dependency by dependency). Minor and major updates stay for a human. #
+#                                                                              #
+# Auto-merge only queues the merge: GitHub performs it once every REQUIRED     #
+# check is green, so it is exactly as safe as the branch protection of dev.    #
+# Updates of OctalMesh/OctalFont itself are never merged automatically: in a   #
+# font repository the workflow ref moves together with the octalfont pin.      #
+# Dependency updates need no changeset and never produce a release on their    #
+# own; they ship with the next release.                                        #
+#                                                                              #
+# Requirements (see RELEASING.md, Setup):                                      #
+#  - Settings > General > "Allow auto-merge" is enabled,                       #
+#  - dev is protected by a ruleset with required status checks (without any,   #
+#    GitHub merges immediately instead of waiting),                            #
+#  - the merge method below is allowed on dev.                                 #
+#                                                                              #
+# Authentication: the octal-automation GitHub App. A merge made with the       #
+# App token triggers the push workflows on dev (Release PR, CI); one made with #
+# GITHUB_TOKEN would not. Call this workflow with `secrets: inherit`.          #
+#                                                                              #
+# Security: pull_request_target is used so Dependabot runs get the secrets.    #
+# Nothing from the pull request is checked out or executed.                    #
+# ============================================================================ #
+
+name: "Reusable: Dependabot Auto-merge"
+
+on:
+  workflow_call:
+    inputs:
+      base-branch:
+        type: string
+        default: "dev"
+
+      merge-method:
+        description: "merge, squash or rebase"
+        type: string
+        default: "squash"
+
+      exclude-dependencies:
+        description: "Dependencies starting with this are never auto-merged"
+        type: string
+        default: "OctalMesh/OctalFont"
+
+permissions:
+  contents: "read"
+  pull-requests: "read"
+
+defaults:
+  run:
+    shell: "bash"
+
+jobs:
+  automerge:
+    name: "Auto-merge Patches"
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.base.ref == inputs.base-branch
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 5
+
+    env:
+      GH_REPO: ${{ github.repository }}
+      PR_URL: ${{ github.event.pull_request.html_url }}
+      METHOD: ${{ inputs.merge-method }}
+
+    steps:
+      - name: "Setup: Dependabot metadata"
+        id: "meta"
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ github.token }}
+
+      - name: "Run: Decide"
+        id: "decide"
+        env:
+          UPDATES: ${{ steps.meta.outputs.updated-dependencies-json }}
+          EXCLUDE: ${{ inputs.exclude-dependencies }}
+        run: |
+          if jq -e --arg ex "$EXCLUDE" '
+              length > 0 and all(.[];
+                .updateType == "version-update:semver-patch"
+                and (($ex != "" and (.dependencyName | startswith($ex))) | not))
+            ' <<<"$UPDATES" >/dev/null; then
+            echo "patch=true" >> "$GITHUB_OUTPUT"
+            echo "Only patch updates: auto-merge is enabled." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "patch=false" >> "$GITHUB_OUTPUT"
+            echo "Not a patch-only update: left for a human." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: "Setup: GitHub App token"
+        id: "app"
+        if: steps.decide.outputs.patch == 'true'
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.BOT_CLIENT_ID || vars.BOT_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+
+      - name: "Run: Enable auto-merge"
+        if: steps.decide.outputs.patch == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          if ! gh pr merge "$PR_URL" --auto "--$METHOD"; then
+            echo "::error::Could not enable auto-merge. Check that 'Allow auto-merge' is on, that dev has required status checks and that the '$METHOD' merge method is allowed."
+            exit 1
+          fi
