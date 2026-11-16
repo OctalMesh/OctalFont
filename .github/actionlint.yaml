@@ -1,0 +1,15 @@
+# ============================================================================ #
+#                          Action Lint Configuration                           #
+# ============================================================================ #
+# actionlint ships a built-in copy of the inputs of popular actions. Its copy  #
+# of actions/create-github-app-token predates the `client-id` input that the   #
+# release workflows use, so these two reports are known false positives.       #
+#                                                                              #
+# See: https://github.com/rhysd/actionlint/blob/main/docs/config.md            #
+# ============================================================================ #
+
+paths:
+  .github/workflows/**/*.yaml:
+    ignore:
+      - 'input "client-id" is not defined in action "actions/create-github-app-token@v3".*'
+      - 'missing input "app-id" which is required by action "actions/create-github-app-token@v3".*'

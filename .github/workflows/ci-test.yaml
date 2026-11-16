@@ -1,0 +1,78 @@
+# ============================================================================ #
+#                                 Test Workflow                                #
+# ============================================================================ #
+# Runs the pytest suite on every supported Python version on every push to     #
+# dev and release, and on every pull request targeting either branch.          #
+#                                                                              #
+# Skip tags (anywhere in commit message or PR title):                          #
+#   [ci-skip]   - skips all workflows                                          #
+#   [test-skip] - skips this workflow only                                     #
+# ============================================================================ #
+
+name: "CI: Test"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["dev", "release"]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/ci-test.yaml"
+  pull_request:
+    branches: ["dev", "release"]
+
+concurrency:
+  group: "test-${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: "read"
+
+jobs:
+  # Check if the commit message / PR title contains skip tags
+  check:
+    name: "Skip Check"
+    runs-on: "ubuntu-latest"
+    outputs:
+      should_skip: ${{ steps.belay.outputs.issued }}
+
+    steps:
+      - name: "Run: Check skip tags"
+        id: "belay"
+        uses: OctalMesh/belay-action@v1
+        with:
+          signal_tags: "[ci-skip],[test-skip]"
+
+  # Run the test suite
+  test:
+    name: "Pytest (Python ${{ matrix.python }})"
+    needs: "check"
+    if: needs.check.outputs.should_skip != 'true'
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - name: "Setup: Checkout repository"
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: "Setup: Python"
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+          cache: "pip"
+          cache-dependency-path: "pyproject.toml"
+
+      - name: "Setup: Install dependencies"
+        run: 'pip install -e ".[test]"'
+
+      - name: "Run: Test suite"
+        run: "pytest -q"

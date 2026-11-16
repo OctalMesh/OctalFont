@@ -1,0 +1,11 @@
+[submodule "fonts/titan"]
+	path = fonts/titan
+	url = https://github.com/OctalMesh/octalfont-titan.git
+
+[submodule "fonts/cuprum"]
+	path = fonts/cuprum
+	url = https://github.com/OctalMesh/octalfont-cuprum.git
+
+[submodule "fonts/mercury"]
+	path = fonts/mercury
+	url = https://github.com/OctalMesh/octalfont-mercury.git

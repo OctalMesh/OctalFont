@@ -1,0 +1,32 @@
+# ============================================================================ #
+#                          Release Readiness Workflow                          #
+# ============================================================================ #
+# Gates pull requests that target release: the version must have moved         #
+# forward and be documented in CHANGELOG.md. CI, CodeQL and the other checks   #
+# run against the PR as usual. The logic lives in                              #
+# reusable-release-readiness.yaml (shared with the font repositories).         #
+#                                                                              #
+# See: RELEASING.md - for more details on the release process.                 #
+# ============================================================================ #
+
+name: "Releasing: Readiness"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: ["release"]
+    types: ["opened", "synchronize", "reopened", "ready_for_review"]
+
+concurrency:
+  group: "release-readiness-${{ github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: "read"
+
+jobs:
+  readiness:
+    name: "Readiness"
+    uses: ./.github/workflows/reusable-release-readiness.yaml
+    with:
+      kind: "tool"

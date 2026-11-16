@@ -1,0 +1,276 @@
+# ============================================================================ #
+#                        Reusable: Release PR Workflow                         #
+# ============================================================================ #
+# Keeps a single DRAFT "release: vX.Y.Z" pull request up to date against the   #
+# release branch. Used by OctalFont itself and by every font repository.       #
+#                                                                              #
+# The PR is a derived artifact - it is rebuilt from scratch, never patched:    #
+#                                                                              #
+#   release-candidate = dev HEAD + one commit that consumes the pending        #
+#                       changesets (`octalfont release version`): new version, #
+#                       CHANGELOG.md section, changesets deleted. Font repos   #
+#                       also regenerate their UFO sources for the new version. #
+#                                                                              #
+# Rules:                                                                       #
+#  - No releasable changeset on dev -> an open PR is closed, its branch is     #
+#    deleted. Docs-only or CI-only changes (empty changesets) never release.   #
+#  - The candidate changed (new commits on dev, new version) -> the PR is      #
+#    moved back to draft: "Ready for review" always refers to what you saw.    #
+#  - The branch is bot-owned and force-pushed. Never push to it by hand.       #
+#                                                                              #
+# Authentication:                                                              #
+#   The octal-automation GitHub App (secrets BOT_CLIENT_ID + BOT_PRIVATE_KEY). #
+#   PRs and pushes made with an App token trigger the pull_request workflows   #
+#   (CI, CodeQL, readiness); anything made with GITHUB_TOKEN would not.        #
+#   Call this workflow with `secrets: inherit`.                                #
+#                                                                              #
+# See: RELEASING.md - for more details on the release process.                 #
+# ============================================================================ #
+
+name: "Reusable: Release PR"
+
+on:
+  workflow_call:
+    inputs:
+      kind:
+        description: "Repository kind: 'tool' (octalfont itself) or 'font' (a font repository)"
+        type: string
+        required: true
+
+      title:
+        description: "Name shown in the PR title, e.g. 'OctalFont' -> 'release: OctalFont v0.1.0'. Empty -> 'release: v0.1.0'"
+        type: string
+        default: ""
+
+      base-branch:
+        type: string
+        default: "dev"
+
+      release-branch:
+        type: string
+        default: "release"
+
+      python-version:
+        type: string
+        default: "3.12"
+
+permissions:
+  contents: "read"
+
+defaults:
+  run:
+    shell: "bash"
+
+jobs:
+  release-pr:
+    name: "Release PR"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 15
+
+    env:
+      BASE: ${{ inputs.base-branch }}
+      RELEASE: ${{ inputs.release-branch }}
+      CANDIDATE: "release-candidate"
+
+    steps:
+      - name: "Setup: GitHub App token"
+        id: "app"
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.BOT_CLIENT_ID || vars.BOT_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+
+      - name: "Setup: Checkout repository"
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.base-branch }}
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ steps.app.outputs.token }}
+
+      - name: "Setup: Git identity"
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          SLUG: ${{ steps.app.outputs.app-slug }}
+        run: |
+          ID=$(gh api "/users/${SLUG}[bot]" --jq .id)
+          git config user.name "${SLUG}[bot]"
+          git config user.email "${ID}+${SLUG}[bot]@users.noreply.github.com"
+
+      - name: "Setup: Python"
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: "pip"
+          cache-dependency-path: |
+            pyproject.toml
+            requirements.txt
+
+      - name: "Setup: Install octalfont"
+        env:
+          KIND: ${{ inputs.kind }}
+        run: |
+          if [ "$KIND" = "tool" ]; then
+            pip install -e .
+          else
+            pip install -r requirements.txt
+          fi
+
+      - name: "Run: Check release state"
+        id: "state"
+        run: |
+          if ! git rev-parse --verify --quiet "origin/$RELEASE" >/dev/null; then
+            echo "::error::Branch '$RELEASE' does not exist. Create it from the last shipped state (see RELEASING.md, Bootstrap)."
+            exit 1
+          fi
+
+          if ! git merge-base --is-ancestor "origin/$RELEASE" "origin/$BASE"; then
+            echo "::error::$RELEASE contains commits that are not on $BASE. Merge $RELEASE into $BASE first (the sync-dev job of the post-release workflow normally does this)."
+            exit 1
+          fi
+
+          NEXT=$(octalfont release next)
+          if [ -n "$NEXT" ]; then
+            echo "pending=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pending=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: "Run: Close release PR (nothing to release)"
+        if: steps.state.outputs.pending != 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          NUMBER=$(gh pr list --base "$RELEASE" --head "$CANDIDATE" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$NUMBER" ]; then
+            gh pr close "$NUMBER" --delete-branch \
+              --comment "Closing: there are no releasable changesets on \`$BASE\`, so there is nothing to release."
+          fi
+          echo "No releasable changesets on $BASE." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "Run: Build release candidate"
+        id: "candidate"
+        if: steps.state.outputs.pending == 'true'
+        env:
+          KIND: ${{ inputs.kind }}
+        run: |
+          git checkout -B "$CANDIDATE" "origin/$BASE"
+
+          VERSION=$(octalfont release version)
+          PREVIOUS=$(octalfont release previous "$VERSION")
+
+          # Font repositories embed the version in the generated UFO sources
+          if [ "$KIND" = "font" ]; then
+            octalfont sources
+          fi
+
+          git add --all
+          git commit --message "chore(release): v$VERSION"
+
+          CHANGED=true
+          if git rev-parse --verify --quiet "origin/$CANDIDATE" >/dev/null &&
+             [ "$(git rev-parse "origin/$CANDIDATE^")" = "$(git rev-parse "origin/$BASE")" ] &&
+             [ "$(git rev-parse "origin/$CANDIDATE^{tree}")" = "$(git rev-parse 'HEAD^{tree}')" ]; then
+            CHANGED=false
+          else
+            git push --force origin "$CANDIDATE"
+          fi
+
+          {
+            echo "version=$VERSION"
+            echo "previous=$PREVIOUS"
+            echo "changed=$CHANGED"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: "Run: Write pull request body"
+        if: steps.state.outputs.pending == 'true'
+        env:
+          VERSION: ${{ steps.candidate.outputs.version }}
+          PREVIOUS: ${{ steps.candidate.outputs.previous }}
+        run: |
+          TOTAL=$(git rev-list --count --no-merges "origin/$RELEASE..origin/$BASE")
+          {
+            echo "## Release v$VERSION"
+            echo
+            echo "Maintained automatically by the **Release PR** workflow and rebuilt on every push to \`$BASE\`. Do not push to \`$CANDIDATE\`."
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Version | \`$VERSION\` |"
+            if [ -n "$PREVIOUS" ]; then
+              echo "| Previous release | \`$PREVIOUS\` |"
+            else
+              echo "| Previous release | none |"
+            fi
+            echo "| Commits | $TOTAL |"
+            echo
+            echo "### Changelog"
+            echo
+            octalfont release notes "$VERSION"
+            echo
+            echo "<details>"
+            echo "<summary>Commits since the last release</summary>"
+            echo
+            # shellcheck disable=SC2016  # the backticks are literal markdown
+            git log --no-merges --max-count=100 --format='- %s (`%h`)' "origin/$RELEASE..origin/$BASE"
+            if [ "$TOTAL" -gt 100 ]; then
+              echo "- _... and $((TOTAL - 100)) more_"
+            fi
+            echo
+            echo "</details>"
+            echo
+            echo "### Before merging"
+            echo
+            echo "- [ ] CI, CodeQL and **Releasing: Readiness** are green <!-- release-check:ci -->"
+            echo "- [ ] Mark the PR **Ready for review** <!-- release-check:ready -->"
+            echo "- [ ] Merge with a **merge commit** (not squash / rebase)"
+            echo
+            echo "Merging tags \`v$VERSION\`, opens a draft GitHub Release and syncs \`$RELEASE\` back into \`$BASE\`. See [RELEASING.md]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$BASE/RELEASING.md)."
+          } > /tmp/release-pr-body.md
+
+      - name: "Run: Create or update release PR"
+        if: steps.state.outputs.pending == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          VERSION: ${{ steps.candidate.outputs.version }}
+          CHANGED: ${{ steps.candidate.outputs.changed }}
+          TITLE: ${{ inputs.title }}
+        run: |
+          if [ -n "$TITLE" ]; then
+            PR_TITLE="release: $TITLE v$VERSION"
+          else
+            PR_TITLE="release: v$VERSION"
+          fi
+
+          gh label create "Release" --color "1f6feb" --description "Release pull request" --force
+          gh label create "Automated" --color "6e7781" --description "Created by automation" --force
+
+          EXISTING=$(gh pr list --base "$RELEASE" --head "$CANDIDATE" --state open --json number,isDraft --jq '.[0] // empty')
+
+          if [ -z "$EXISTING" ]; then
+            gh pr create --draft --base "$RELEASE" --head "$CANDIDATE" \
+              --title "$PR_TITLE" \
+              --body-file /tmp/release-pr-body.md \
+              --label "Release" --label "Automated"
+            echo "Opened draft release PR for v$VERSION." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          NUMBER=$(jq -r '.number' <<<"$EXISTING")
+          IS_DRAFT=$(jq -r '.isDraft' <<<"$EXISTING")
+
+          # The body is rewritten only when the candidate changed: it is identical
+          # otherwise, and rewriting it would reset the "Before merging" checkboxes
+          # that the Releasing: Checklist workflow keeps up to date.
+          EDIT_ARGS=(--title "$PR_TITLE" --add-label "Release" --add-label "Automated")
+          if [ "$CHANGED" = "true" ]; then
+            EDIT_ARGS+=(--body-file /tmp/release-pr-body.md)
+          fi
+          gh pr edit "$NUMBER" "${EDIT_ARGS[@]}"
+
+          if [ "$CHANGED" = "true" ] && [ "$IS_DRAFT" = "false" ]; then
+            gh pr ready "$NUMBER" --undo
+            gh pr comment "$NUMBER" \
+              --body "The release candidate changed (new commits on \`$BASE\` or a new version), so this PR was moved back to draft. Review it again and mark it **Ready for review**."
+          fi
+          echo "Updated release PR #$NUMBER for v$VERSION (changed: $CHANGED)." >> "$GITHUB_STEP_SUMMARY"

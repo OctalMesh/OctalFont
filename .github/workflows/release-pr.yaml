@@ -1,0 +1,34 @@
+# ============================================================================ #
+#                              Release PR Workflow                             #
+# ============================================================================ #
+# Keeps a single DRAFT "release: OctalFont vX.Y.Z" PR up to date against       #
+# release whenever changesets land on dev. The logic lives in                  #
+# reusable-release-pr.yaml (shared with the font repositories).                #
+#                                                                              #
+# Auth: the octal-automation GitHub App (BOT_CLIENT_ID, BOT_PRIVATE_KEY).      #
+#                                                                              #
+# See: RELEASING.md - for more details on the release process.                 #
+# ============================================================================ #
+
+name: "Releasing: Release PR"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["dev"]
+
+concurrency:
+  group: "release-pr"
+  cancel-in-progress: false
+
+permissions:
+  contents: "read"
+
+jobs:
+  release-pr:
+    name: "Release PR"
+    uses: ./.github/workflows/reusable-release-pr.yaml
+    with:
+      kind: "tool"
+      title: "OctalFont"
+    secrets: "inherit"

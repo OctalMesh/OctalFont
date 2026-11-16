@@ -1,0 +1,107 @@
+# ============================================================================ #
+#                     Reusable: Release Checklist Workflow                     #
+# ============================================================================ #
+# Ticks the "Before merging" boxes of the draft release PR when they become    #
+# true, and unticks them when they stop being true:                            #
+#                                                                              #
+#   <!-- release-check:ci -->     every check of the PR is green (or skipped)  #
+#   <!-- release-check:ready -->  the PR is no longer a draft                  #
+#                                                                              #
+# The third box ("Merge with a merge commit") is a decision made at the merge  #
+# button and cannot be known in advance, so it stays manual. Enforce it with a #
+# ruleset instead (see RELEASING.md).                                          #
+#                                                                              #
+# The state is recomputed from scratch on every run, so the workflow is        #
+# idempotent. It only edits the body of the PR; nothing is ever merged.        #
+#                                                                              #
+# Called from a thin workflow that listens to `workflow_run` of the CI         #
+# workflows and to ready_for_review / converted_to_draft.                      #
+# ============================================================================ #
+
+name: "Reusable: Release Checklist"
+
+on:
+  workflow_call:
+    inputs:
+      release-branch:
+        type: string
+        default: "release"
+
+      candidate-branch:
+        type: string
+        default: "release-candidate"
+
+permissions:
+  contents: "read"
+  pull-requests: "write"
+  checks: "read"
+  statuses: "read"
+
+defaults:
+  run:
+    shell: "bash"
+
+jobs:
+  checklist:
+    name: "Sync Checklist"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 5
+
+    concurrency:
+      group: "release-checklist"
+      cancel-in-progress: false
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE: ${{ inputs.release-branch }}
+      CANDIDATE: ${{ inputs.candidate-branch }}
+      SELF: ${{ github.workflow }}
+
+    steps:
+      - name: "Run: Sync checklist"
+        run: |
+          NUMBER=$(gh pr list --base "$RELEASE" --head "$CANDIDATE" --state open --json number --jq '.[0].number // empty')
+          if [ -z "$NUMBER" ]; then
+            echo "No open release PR." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          gh pr view "$NUMBER" --json body,isDraft > "$RUNNER_TEMP/pr.json"
+          jq -r '.body' "$RUNNER_TEMP/pr.json" | tr -d '\r' > "$RUNNER_TEMP/old.md"
+          DRAFT=$(jq -r '.isDraft' "$RUNNER_TEMP/pr.json")
+
+          # Checks of the PR, except this workflow's own
+          CHECKS=$(gh pr checks "$NUMBER" --json name,bucket,workflow 2>/dev/null || true)
+          if [ -z "$CHECKS" ]; then
+            CHECKS='[]'
+          fi
+
+          GREEN=$(jq --arg self "$SELF" \
+            '[.[] | select(.workflow != $self)] | (length > 0) and (all(.[]; .bucket == "pass" or .bucket == "skipping"))' \
+            <<<"$CHECKS")
+
+          CI_MARK=" "
+          if [ "$GREEN" = "true" ]; then
+            CI_MARK="x"
+          fi
+
+          READY_MARK=" "
+          if [ "$DRAFT" = "false" ]; then
+            READY_MARK="x"
+          fi
+
+          set_box() { # marker, mark
+            sed -E "s/^- \[[ x]\] (.*<!-- release-check:$1 -->)\$/- [$2] \1/"
+          }
+
+          set_box ci "$CI_MARK" < "$RUNNER_TEMP/old.md" | set_box ready "$READY_MARK" > "$RUNNER_TEMP/new.md"
+
+          if cmp -s "$RUNNER_TEMP/old.md" "$RUNNER_TEMP/new.md"; then
+            echo "Release PR #$NUMBER: checklist already up to date (checks green: $GREEN, ready: $([ "$DRAFT" = "false" ] && echo true || echo false))." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # REST instead of `gh pr edit`: it works with the plain GITHUB_TOKEN
+          gh api --method PATCH "repos/$GH_REPO/pulls/$NUMBER" -F body=@"$RUNNER_TEMP/new.md" > /dev/null
+          echo "Release PR #$NUMBER: checklist updated (checks green: $GREEN, ready: $([ "$DRAFT" = "false" ] && echo true || echo false))." >> "$GITHUB_STEP_SUMMARY"

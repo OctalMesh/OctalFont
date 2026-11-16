@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "octalfont"
-version = "0.0.0"
+version = "0.1.0"
 description = "Shared build tooling for the Octal font families"
 readme = "README.md"
 license = "MIT"

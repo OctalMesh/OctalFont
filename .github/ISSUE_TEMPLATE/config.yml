@@ -1,13 +1,17 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Issue with design
+    url: https://github.com/OctalMesh/OctalDesign/issues/new/choose
+    about: Please open issues relating to design in OctalMesh/OctalDesign
+
   - name: Issue with website
     url: https://github.com/OctalMesh/OctalWeb/issues/new/choose
     about: Please open issues relating to the website in OctalMesh/OctalWeb
-    
+
   - name: 🌐 Website
     url: https://octalmesh.com/
     about: Check out our website
-    
+
   - name: 📣 Socials
     url: https://socials.octalmesh.com/
     about: Join us on social media

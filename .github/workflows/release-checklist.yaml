@@ -1,0 +1,37 @@
+# ============================================================================ #
+#                            Release Checklist Workflow                        #
+# ============================================================================ #
+# Keeps the "Before merging" boxes of the release PR truthful: ticked when     #
+# CI / CodeQL / Readiness are green and when the PR leaves draft, unticked     #
+# again otherwise. The logic lives in reusable-release-checklist.yaml.         #
+#                                                                              #
+# See: RELEASING.md - for more details on the release process.                 #
+# ============================================================================ #
+
+name: "Releasing: Checklist"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: ["release"]
+    types: ["ready_for_review", "converted_to_draft"]
+  workflow_run:
+    workflows:
+      - "CI: Test"
+      - "CI: Build"
+      - "CI: Quality"
+      - "CI: CodeQL"
+      - "Releasing: Readiness"
+    types: ["completed"]
+
+permissions:
+  contents: "read"
+  pull-requests: "write"
+  checks: "read"
+  statuses: "read"
+
+jobs:
+  checklist:
+    name: "Checklist"
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'release-candidate'
+    uses: ./.github/workflows/reusable-release-checklist.yaml

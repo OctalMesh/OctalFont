@@ -1,0 +1,485 @@
+# ============================================================================ #
+#                        Reusable: Project Sync Workflow                       #
+# ============================================================================ #
+# Keeps pull requests and the issues they close in step with the organization  #
+# project. Two jobs, selected by the event of the caller:                      #
+#  - pull-request (pull_request_target)                                        #
+#      * label      the PR from the type of its title ("feat(x): ..."), so     #
+#                   .github/release.yaml can group the generated notes         #
+#      * project    add the PR to the project and set its fields:              #
+#                     Status   In Progress while open, Staging once merged     #
+#                     Size     computed from the diff (always recomputed)      #
+#                     Priority default from the type, only if still empty      #
+#                   Issues closed by the PR ("Closes #12") follow the Status.  #
+#      * title      fail when the title is not "type(scope): summary"          #
+#                   (bots are exempt)                                          #
+#  - released (release: published)                                             #
+#      * every pull request listed in the published release, the release PR    #
+#        and the issues they closed move to Released.                          #
+#                                                                              #
+# Security: pull_request_target runs with secrets, so this workflow never      #
+# checks out or executes code of the pull request. It only reads metadata      #
+# through the API, and passes titles through environment variables.            #
+#                                                                              #
+# Authentication: the octal-automation GitHub App. Besides what the release    #
+# workflows already need, the App must have the organization permission        #
+# "Projects: Read and write". Call this workflow with `secrets: inherit`.      #
+#                                                                              #
+# Project fields it expects (names and options must match exactly; a missing   #
+# one is skipped with a warning, it never fails the run):                      #
+#   Status    Backlog, To-Do, In Progress, Staging, Released                   #
+#   Priority  Priority: High, Priority: Medium, Priority: Low                  #
+#   Size      Size: Large, Size: Medium, Size: Small                           #
+# ============================================================================ #
+
+name: "Reusable: Project Sync"
+
+on:
+  workflow_call:
+    inputs:
+      project-owner:
+        description: "Organization that owns the project"
+        type: string
+        default: "OctalMesh"
+
+      project-number:
+        type: number
+        default: 6
+
+      base-branch:
+        type: string
+        default: "dev"
+
+      release-branch:
+        type: string
+        default: "release"
+
+      size-small-max:
+        description: "Changed lines up to this number: Size: Small"
+        type: number
+        default: 50
+
+      size-medium-max:
+        description: "Changed lines up to this number: Size: Medium, above: Size: Large"
+        type: number
+        default: 300
+
+permissions:
+  contents: "read"
+
+defaults:
+  run:
+    shell: "bash"
+
+jobs:
+  # Pull request events
+  pull-request:
+    name: "Labels & Project"
+    if: github.event_name == 'pull_request_target'
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+
+    concurrency:
+      group: "project-sync-pr-${{ github.event.pull_request.number }}"
+      cancel-in-progress: false
+
+    env:
+      GH_REPO: ${{ github.repository }}
+      OWNER: ${{ inputs.project-owner }}
+      NUMBER: ${{ inputs.project-number }}
+      BASE: ${{ inputs.base-branch }}
+      RELEASE: ${{ inputs.release-branch }}
+      SMALL_MAX: ${{ inputs.size-small-max }}
+      MEDIUM_MAX: ${{ inputs.size-medium-max }}
+      PR: ${{ github.event.pull_request.number }}
+      PR_NODE: ${{ github.event.pull_request.node_id }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      PR_BASE: ${{ github.event.pull_request.base.ref }}
+      PR_MERGED: ${{ github.event.pull_request.merged }}
+      PR_ACTION: ${{ github.event.action }}
+
+    steps:
+      - name: "Setup: GitHub App token"
+        id: "app"
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.BOT_CLIENT_ID || vars.BOT_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+
+      - name: "Setup: Project helpers"
+        run: |
+          cat > "$RUNNER_TEMP/project-lib.sh" <<'LIB'
+          # shellcheck shell=bash
+          # shellcheck disable=SC2016  # GraphQL $variables are not shell variables
+          PROJECT_JSON="$RUNNER_TEMP/project.json"
+
+          # Loads the project id and its single-select fields (with options).
+          load_project() {
+            gh api graphql -f owner="$OWNER" -F number="$NUMBER" -f query='
+              query($owner: String!, $number: Int!) {
+                organization(login: $owner) {
+                  projectV2(number: $number) {
+                    id
+                    fields(first: 50) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField { id name options { id name } }
+                      }
+                    }
+                  }
+                }
+              }' > "$PROJECT_JSON"
+
+            PROJECT_ID=$(jq -r '.data.organization.projectV2.id // empty' "$PROJECT_JSON")
+
+            if [ -z "$PROJECT_ID" ]; then
+              echo "::error::Project $OWNER/$NUMBER was not found or is not readable. The octal-automation App needs the organization permission 'Projects: Read and write'."
+              return 1
+            fi
+          }
+
+          field_id() {
+            jq -r --arg f "$1" '.data.organization.projectV2.fields.nodes[] | select(.name == $f) | .id' "$PROJECT_JSON"
+          }
+
+          option_id() {
+            jq -r --arg f "$1" --arg o "$2" '.data.organization.projectV2.fields.nodes[] | select(.name == $f) | .options[] | select(.name == $o) | .id' "$PROJECT_JSON"
+          }
+
+          # content node id (PR or issue) -> project item id. Adding twice is a no-op.
+          add_item() {
+            gh api graphql -f project="$PROJECT_ID" -f content="$1" -f query='
+              mutation($project: ID!, $content: ID!) {
+                addProjectV2ItemById(input: {projectId: $project, contentId: $content}) { item { id } }
+              }' --jq '.data.addProjectV2ItemById.item.id'
+          }
+
+          # item id, field name -> current option name (empty when unset)
+          current_value() {
+            gh api graphql -f item="$1" -f field="$2" -f query='
+              query($item: ID!, $field: String!) {
+                node(id: $item) {
+                  ... on ProjectV2Item {
+                    fieldValueByName(name: $field) {
+                      ... on ProjectV2ItemFieldSingleSelectValue { name }
+                    }
+                  }
+                }
+              }' --jq '.data.node.fieldValueByName.name // empty'
+          }
+
+          # item id, field name, option name
+          set_field() {
+            local fid oid
+            fid=$(field_id "$2")
+            oid=$(option_id "$2" "$3")
+
+            if [ -z "$fid" ] || [ -z "$oid" ]; then
+              echo "::warning::Project has no field '$2' with the option '$3' - skipped."
+              return 0
+            fi
+
+            gh api graphql -f project="$PROJECT_ID" -f item="$1" -f field="$fid" -f option="$oid" -f query='
+              mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $project, itemId: $item, fieldId: $field,
+                  value: {singleSelectOptionId: $option}
+                }) { projectV2Item { id } }
+              }' > /dev/null
+          }
+
+          set_if_empty() {
+            if [ -z "$(current_value "$1" "$2")" ]; then
+              set_field "$1" "$2" "$3"
+            fi
+          }
+
+          # PR node id -> node ids of the issues it closes
+          linked_issues() {
+            gh api graphql -f id="$1" -f query='
+              query($id: ID!) {
+                node(id: $id) {
+                  ... on PullRequest { closingIssuesReferences(first: 20) { nodes { id } } }
+                }
+              }' --jq '.data.node.closingIssuesReferences.nodes[].id'
+          }
+          LIB
+
+      - name: "Run: Label by title type"
+        id: "labels"
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          TYPE=""
+          SCOPE=""
+          re='^([a-z]+)(\(([a-z0-9._/-]+)\))?!?: '
+          if [[ "$PR_TITLE" =~ $re ]]; then
+            TYPE="${BASH_REMATCH[1]}"
+            SCOPE="${BASH_REMATCH[3]}"
+          fi
+
+          # Labels this workflow owns. Release, Dependencies and the human
+          # ones (Suggestion, ...) are never removed.
+          MANAGED=("Suggestion" "Bug" "Documentation" "Maintenance")
+
+          WANT=""
+          case "$TYPE" in
+            feat)    WANT="Suggestion" ;;
+            fix)     WANT="Bug" ;;
+            docs)    WANT="Documentation" ;;
+            style|refactor|perf|test|build|ci|chore) WANT="Maintenance" ;;
+          esac
+
+          ADD=()
+          case "$SCOPE" in
+            deps|deps-*) ADD+=("Dependencies"); WANT="" ;;
+          esac
+          if [ "$TYPE" = "release" ]; then
+            ADD+=("Release")
+          fi
+          if [ -n "$WANT" ]; then
+            ADD+=("$WANT")
+          fi
+
+          # Only creates what is missing; labels that exist keep their color
+          # and description.
+          ensure_label() {
+            gh label create "$1" --description "$2" --color "$3" 2>/dev/null || true
+          }
+          ensure_label "Suggestion"    "New feature, request or improvement"           "a2eeef"
+          ensure_label "Bug"           "Something isn't working"                       "d73a4a"
+          ensure_label "Documentation" "Improvements or additions to documentation"    "0075ca"
+          ensure_label "Maintenance"   "Refactoring, CI, tooling and chores"          "cfd3d7"
+          ensure_label "Dependencies"  "Dependency version updates and security patches" "0366d6"
+          ensure_label "Release"       "Release pull request"                          "1f6feb"
+
+          ARGS=()
+          for label in "${ADD[@]}"; do
+            ARGS+=(--add-label "$label")
+          done
+          for label in "${MANAGED[@]}"; do
+            if [ "$label" != "$WANT" ]; then
+              ARGS+=(--remove-label "$label")
+            fi
+          done
+
+          if [ "$PR_ACTION" != "closed" ] && [ "${#ARGS[@]}" -gt 0 ]; then
+            gh pr edit "$PR" "${ARGS[@]}"
+          fi
+
+          {
+            echo "type=$TYPE"
+            echo "scope=$SCOPE"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: "Run: Sync project item"
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          TYPE: ${{ steps.labels.outputs.type }}
+        run: |
+          source "$RUNNER_TEMP/project-lib.sh"
+          load_project
+
+          ITEM=$(add_item "$PR_NODE")
+          ISSUES=$(linked_issues "$PR_NODE" || true)
+
+          # --- Closed: merged work waits for a release in Staging ------------
+          if [ "$PR_ACTION" = "closed" ]; then
+            if [ "$PR_MERGED" = "true" ]; then
+              set_field "$ITEM" "Status" "Staging"
+              for issue in $ISSUES; do
+                set_field "$(add_item "$issue")" "Status" "Staging"
+              done
+              echo "Pull request #$PR merged into $PR_BASE: Status Staging." >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "Pull request #$PR closed without merging: project left unchanged." >> "$GITHUB_STEP_SUMMARY"
+            fi
+            exit 0
+          fi
+
+          # --- Open: Status ---------------------------------------------------
+          if [ "$PR_ACTION" = "reopened" ]; then
+            set_field "$ITEM" "Status" "In Progress"
+          else
+            set_if_empty "$ITEM" "Status" "In Progress"
+          fi
+
+          # Issues the PR closes start moving as soon as work is linked
+          for issue in $ISSUES; do
+            ISSUE_ITEM=$(add_item "$issue")
+            case "$(current_value "$ISSUE_ITEM" "Status")" in
+              ""|"Backlog"|"To-Do") set_field "$ISSUE_ITEM" "Status" "In Progress" ;;
+            esac
+          done
+
+          # --- Priority: a default, never overwrites a human choice ----------
+          case "$TYPE" in
+            fix|release)                                  PRIORITY="Priority: High" ;;
+            feat|"")                                      PRIORITY="Priority: Medium" ;;
+            *)                                            PRIORITY="Priority: Low" ;;
+          esac
+          set_if_empty "$ITEM" "Priority" "$PRIORITY"
+
+          # --- Size: recomputed from the diff on every update -----------------
+          gh pr view "$PR" --json files > "$RUNNER_TEMP/pr-files.json"
+
+          COUNT=$(jq '.files | length' "$RUNNER_TEMP/pr-files.json")
+          # Generated and bookkeeping files do not make a change bigger
+          LINES=$(jq '[.files[]
+                       | select(.path | test("(^|/)(CHANGELOG\\.md|package-lock\\.json|[^/]*\\.lock)$|^\\.changeset/|\\.ufo/") | not)
+                       | .additions + .deletions] | add // 0' "$RUNNER_TEMP/pr-files.json")
+
+          # gh returns at most 100 files; that many is Large by definition
+          if [ "$COUNT" -ge 100 ] || [ "$LINES" -gt "$MEDIUM_MAX" ]; then
+            SIZE="Size: Large"
+          elif [ "$LINES" -gt "$SMALL_MAX" ]; then
+            SIZE="Size: Medium"
+          else
+            SIZE="Size: Small"
+          fi
+          set_field "$ITEM" "Size" "$SIZE"
+
+          echo "Pull request #$PR ($PR_ACTION): $LINES changed lines in $COUNT files -> $SIZE, default $PRIORITY." >> "$GITHUB_STEP_SUMMARY"
+
+  # Title check
+  title:
+    name: "PR Title"
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.action != 'closed' &&
+      !endsWith(github.event.pull_request.user.login, '[bot]')
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 2
+
+    env:
+      PR_TITLE: ${{ github.event.pull_request.title }}
+
+    steps:
+      - name: "Run: Validate title"
+        run: |
+          re='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|release)(\([a-z0-9._/-]+\))?!?: [^ ]'
+          if [[ ! "$PR_TITLE" =~ $re ]]; then
+            echo "::error title=Pull request title::Use 'type(scope): summary', e.g. 'feat(titan): add Cyrillic Plus glyphs'. Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, release."
+            exit 1
+          fi
+
+  # Release published
+  released:
+    name: "Released"
+    if: github.event_name == 'release'
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+
+    env:
+      GH_REPO: ${{ github.repository }}
+      OWNER: ${{ inputs.project-owner }}
+      NUMBER: ${{ inputs.project-number }}
+      RELEASE: ${{ inputs.release-branch }}
+      TAG: ${{ github.event.release.tag_name }}
+
+    steps:
+      - name: "Setup: GitHub App token"
+        id: "app"
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.BOT_CLIENT_ID || vars.BOT_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+
+      - name: "Run: Move shipped work to Released"
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          cat > "$RUNNER_TEMP/project-lib.sh" <<'LIB'
+          # shellcheck shell=bash
+          # shellcheck disable=SC2016  # GraphQL $variables are not shell variables
+          PROJECT_JSON="$RUNNER_TEMP/project.json"
+
+          load_project() {
+            gh api graphql -f owner="$OWNER" -F number="$NUMBER" -f query='
+              query($owner: String!, $number: Int!) {
+                organization(login: $owner) {
+                  projectV2(number: $number) {
+                    id
+                    fields(first: 50) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField { id name options { id name } }
+                      }
+                    }
+                  }
+                }
+              }' > "$PROJECT_JSON"
+
+            PROJECT_ID=$(jq -r '.data.organization.projectV2.id // empty' "$PROJECT_JSON")
+
+            if [ -z "$PROJECT_ID" ]; then
+              echo "::error::Project $OWNER/$NUMBER was not found or is not readable. The octal-automation App needs the organization permission 'Projects: Read and write'."
+              return 1
+            fi
+          }
+
+          field_id() {
+            jq -r --arg f "$1" '.data.organization.projectV2.fields.nodes[] | select(.name == $f) | .id' "$PROJECT_JSON"
+          }
+
+          option_id() {
+            jq -r --arg f "$1" --arg o "$2" '.data.organization.projectV2.fields.nodes[] | select(.name == $f) | .options[] | select(.name == $o) | .id' "$PROJECT_JSON"
+          }
+
+          add_item() {
+            gh api graphql -f project="$PROJECT_ID" -f content="$1" -f query='
+              mutation($project: ID!, $content: ID!) {
+                addProjectV2ItemById(input: {projectId: $project, contentId: $content}) { item { id } }
+              }' --jq '.data.addProjectV2ItemById.item.id'
+          }
+
+          set_field() {
+            local fid oid
+            fid=$(field_id "$2")
+            oid=$(option_id "$2" "$3")
+
+            if [ -z "$fid" ] || [ -z "$oid" ]; then
+              echo "::warning::Project has no field '$2' with the option '$3' - skipped."
+              return 0
+            fi
+
+            gh api graphql -f project="$PROJECT_ID" -f item="$1" -f field="$fid" -f option="$oid" -f query='
+              mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $project, itemId: $item, fieldId: $field,
+                  value: {singleSelectOptionId: $option}
+                }) { projectV2Item { id } }
+              }' > /dev/null
+          }
+
+          linked_issues() {
+            gh api graphql -f id="$1" -f query='
+              query($id: ID!) {
+                node(id: $id) {
+                  ... on PullRequest { closingIssuesReferences(first: 20) { nodes { id } } }
+                }
+              }' --jq '.data.node.closingIssuesReferences.nodes[].id'
+          }
+          LIB
+
+          source "$RUNNER_TEMP/project-lib.sh"
+          load_project
+
+          # Pull requests named in the release notes, plus the release PR itself
+          BODY=$(gh release view "$TAG" --json body --jq .body)
+          NUMBERS=$(grep -oE '/pull/[0-9]+' <<<"$BODY" | cut -d/ -f3 | sort -un || true)
+          RELEASE_PR=$(gh pr list --base "$RELEASE" --head "release-candidate" --state merged --limit 1 --json number --jq '.[0].number // empty')
+
+          MOVED=0
+          for n in $NUMBERS $RELEASE_PR; do
+            NODE=$(gh pr view "$n" --json id --jq .id 2>/dev/null || true)
+            if [ -z "$NODE" ]; then
+              continue
+            fi
+
+            set_field "$(add_item "$NODE")" "Status" "Released"
+            for issue in $(linked_issues "$NODE" || true); do
+              set_field "$(add_item "$issue")" "Status" "Released"
+            done
+            MOVED=$((MOVED + 1))
+          done
+
+          echo "Release $TAG published: $MOVED pull requests (and the issues they closed) moved to Released." >> "$GITHUB_STEP_SUMMARY"

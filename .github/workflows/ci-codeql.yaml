@@ -1,0 +1,80 @@
+# ============================================================================ #
+#                                CodeQL Workflow                               #
+# ============================================================================ #
+# Runs CodeQL analysis for Python and for the GitHub Actions workflow files on #
+# every push to dev and release, on every pull request targeting either        #
+# branch, and weekly.                                                          #
+#                                                                              #
+# Skip tags (anywhere in commit message or PR title):                          #
+#   [ci-skip] - skips all workflows                                            #
+#   [ql-skip] - skips this workflow only (scheduled runs always execute)       #
+# ============================================================================ #
+
+name: "CI: CodeQL"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["dev", "release"]
+  pull_request:
+    branches: ["dev", "release"]
+  schedule:
+    # Runs every Monday at 6:00 AM UTC
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: "read"
+  security-events: "write"
+
+jobs:
+  # Check if the commit message / PR title contains skip tags
+  check:
+    name: "Skip Check"
+    runs-on: "ubuntu-latest"
+    outputs:
+      should_skip: ${{ steps.belay.outputs.issued }}
+
+    steps:
+      - name: "Run: Check skip tags"
+        id: "belay"
+        # Scheduled runs: always execute regardless of skip tags
+        if: github.event_name != 'schedule'
+        uses: OctalMesh/belay-action@v1
+        with:
+          signal_tags: "[ci-skip],[ql-skip]"
+
+  # Perform CodeQL analysis
+  analyze:
+    name: "Analyze (${{ matrix.language }})"
+    needs: "check"
+    if: needs.check.outputs.should_skip != 'true'
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 30
+
+    permissions:
+      actions: "read"
+      contents: "read"
+      security-events: "write"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["python", "actions"]
+
+    steps:
+      - name: "Setup: Checkout repository"
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: "Setup: Initialize CodeQL"
+        uses: github/codeql-action/init@v4
+        with:
+          config-file: "./.github/codeql/codeql-config.yaml"
+          languages: ${{ matrix.language }}
+          build-mode: "none"
+
+      - name: "Run: Perform CodeQL Analysis"
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"

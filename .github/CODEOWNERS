@@ -1,0 +1,39 @@
+# ============================================================================ #
+#                                  Code Owners                                 #
+# ============================================================================ #
+# This repository is maintained by the OctalMesh teams listed below.           #
+# Please direct any issues or pull requests to the appropriate team.           #
+#                                                                              #
+# Team Assignments:                                                            #
+# - @OctalMesh/core:        Policies, contribution guidelines, and licensing   #
+# - @OctalMesh/atelier:     Design assets and documentation                    #
+# - @OctalMesh/development: Codebase, tooling, and GitHub configuration        #
+# ============================================================================ #
+
+# GitHub configuration
+/.github/      @OctalMesh/core
+.editorconfig  @OctalMesh/development
+.gitattributes @OctalMesh/development
+.gitignore     @OctalMesh/development
+
+# Documentation
+/docs/    @OctalMesh/atelier @OctalMesh/development
+README.md @OctalMesh/atelier @OctalMesh/development
+
+# Design assets
+/assets/ @OctalMesh/atelier
+
+# Tooling, tests and release automation
+/src/             @OctalMesh/development
+/tests/           @OctalMesh/development
+/.changeset/      @OctalMesh/development
+pyproject.toml    @OctalMesh/development
+RELEASING.md      @OctalMesh/development
+CHANGELOG.md      @OctalMesh/development
+
+# Policies, contribution, and licensing
+CODE_OF_CONDUCT*.md @OctalMesh/core
+CONTRIBUTING*.md    @OctalMesh/core
+LICENSE*.md         @OctalMesh/core
+SECURITY*.md        @OctalMesh/core
+SUPPORT*.md         @OctalMesh/core

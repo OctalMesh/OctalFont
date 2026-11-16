@@ -1,0 +1,39 @@
+# ============================================================================ #
+#                        Generated Release Notes Config                        #
+# ============================================================================ #
+# Groups the notes that "Releasing: Post-Release" generates for the draft      #
+# GitHub Release, by the labels of the pull requests merged since the          #
+# previous tag. "Project: Sync" sets the labels from the type of the PR title: #
+# feat -> Suggestion, fix -> Bug, docs -> Documentation, chore/ci/refactor/... #
+# -> Maintenance, chore(deps) -> Dependencies.                                 #
+# ============================================================================ #
+
+changelog:
+  exclude:
+    labels:
+      - "Release"
+
+  categories:
+    - title: "New features"
+      labels:
+        - "Suggestion"
+
+    - title: "Bug fixes"
+      labels:
+        - "Bug"
+
+    - title: "Documentation"
+      labels:
+        - "Documentation"
+
+    - title: "Dependencies"
+      labels:
+        - "Dependencies"
+
+    - title: "Maintenance"
+      labels:
+        - "Maintenance"
+
+    - title: "Other changes"
+      labels:
+        - "*"

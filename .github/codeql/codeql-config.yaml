@@ -1,0 +1,15 @@
+# ============================================================================ #
+#                             CodeQL Configuration                             #
+# ============================================================================ #
+# This file defines the CodeQL analysis configuration for this project. It     #
+# specifies which paths to exclude from analysis, which query suites to run,   #
+# and which rules to suppress to reduce noise.                                 #
+# ============================================================================ #
+
+name: "CodeQL Configuration"
+
+paths-ignore:
+  - "tests/**"
+  - "fonts/**"
+  - "assets/**"
+  - "docs/**"

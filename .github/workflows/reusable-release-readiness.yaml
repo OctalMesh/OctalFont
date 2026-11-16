@@ -1,0 +1,71 @@
+# ============================================================================ #
+#                     Reusable: Release Readiness Workflow                     #
+# ============================================================================ #
+# Gates pull requests that target the release branch. CI workflows already     #
+# run their checks against release as a PR-target branch, so this adds only    #
+# what they don't cover (`octalfont release verify`):                          #
+#  - the version in the PR is strictly greater than the one on release,        #
+#  - CHANGELOG.md has a section for it,                                        #
+#  - no releasable changeset is left unconsumed.                               #
+#                                                                              #
+# See: RELEASING.md - for more details on the release process.                 #
+# ============================================================================ #
+
+name: "Reusable: Release Readiness"
+
+on:
+  workflow_call:
+    inputs:
+      kind:
+        description: "Repository kind: 'tool' (octalfont itself) or 'font' (a font repository)"
+        type: string
+        required: true
+
+      release-branch:
+        type: string
+        default: "release"
+
+      python-version:
+        type: string
+        default: "3.12"
+
+permissions:
+  contents: "read"
+
+jobs:
+  version-gate:
+    name: "Version Gate"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+
+    steps:
+      - name: "Setup: Checkout repository"
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: "Setup: Python"
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: "pip"
+          cache-dependency-path: |
+            pyproject.toml
+            requirements.txt
+
+      - name: "Setup: Install octalfont"
+        env:
+          KIND: ${{ inputs.kind }}
+        run: |
+          if [ "$KIND" = "tool" ]; then
+            pip install -e .
+          else
+            pip install -r requirements.txt
+          fi
+
+      - name: "Run: Verify version"
+        env:
+          RELEASE: ${{ inputs.release-branch }}
+        run: 'octalfont release verify --base "origin/$RELEASE" --github'
